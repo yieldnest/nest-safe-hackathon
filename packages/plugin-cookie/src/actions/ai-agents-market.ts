@@ -1,5 +1,5 @@
 import { Memory, State, Action, IAgentRuntime, composeContext, generateMessageResponse, ModelClass, parseJSONObjectFromText } from "@elizaos/core";
-import { initCookieApi } from "../api/coockei-api";
+import { initCookieApi } from "../api/cookie-api";
 import { aiAgentsAnalysisTemplate } from '../templates';
 import { AiAgentData, MarketAnalyzeLLMResponse } from "../types";
 
