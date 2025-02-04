@@ -1,0 +1,17 @@
+# Ignore TypeScript files in root directory only
+/*.ts
+
+# Exceptions
+!index.ts
+!character.ts
+
+# Keep all files in characters directory
+!characters/
+!characters/**/*.ts
+
+# Other ignores
+.env
+*.env
+.env*
+/data
+/generatedImages

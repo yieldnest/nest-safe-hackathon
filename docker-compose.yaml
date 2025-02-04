@@ -1,0 +1,15 @@
+services:
+    tee:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        stdin_open: true
+        tty: true
+        volumes:
+            - /var/run/tappd.sock:/var/run/tappd.sock
+        ports:
+            - "3000:80"
+        restart: always
+
+volumes:
+    tee:
