@@ -654,6 +654,15 @@ importers:
         specifier: 8.3.5
         version: 8.3.5(jiti@1.21.7)(postcss@8.5.1)(typescript@5.6.3)(yaml@2.7.0)
 
+  packages/plugin-vaults_fyi:
+    dependencies:
+      '@elizaos/core':
+        specifier: workspace:*
+        version: link:../core
+      tsup:
+        specifier: 8.3.5
+        version: 8.3.5(jiti@1.21.7)(postcss@8.5.1)(typescript@5.6.3)(yaml@2.7.0)
+
 packages:
 
   '@0glabs/0g-ts-sdk@0.2.1':
