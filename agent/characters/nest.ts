@@ -5,7 +5,7 @@ export const nest: Character = {
     username: "0xNestAI",
     plugins: [],
     clients: [],
-    modelProvider: ModelProviderName.HEURIST,
+    modelProvider: ModelProviderName.OLLAMA,
     settings: {
         secrets: {},
         voice: {
