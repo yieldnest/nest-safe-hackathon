@@ -7,10 +7,16 @@ import {
     elizaLogger,
     getEnvVariable,
     validateCharacterConfig,
+    Memory,
+    State,
+    UUID,
+    Content,
+    Actor,
 } from "@elizaos/core";
 
 import { REST, Routes } from "discord.js";
 import { DirectClient } from ".";
+import { v4 as uuidv4 } from "uuid";
 
 export function createApiRouter(
     agents: Map<string, AgentRuntime>,
@@ -57,6 +63,74 @@ export function createApiRouter(
             id: agent.agentId,
             character: agent.character,
         });
+    });
+
+    router.post("/agents/:agentId/action/:actionName", async (req, res) => {
+        const { agentId, actionName } = req.params;
+        const options = req.body;
+        
+        console.log("[API] Action request received:", { agentId, actionName, options });
+        
+        const agent = agents.get(agentId);
+        if (!agent) {
+            console.error("[API] Agent not found:", agentId);
+            res.status(404).json({ error: "Agent not found" });
+            return;
+        }
+
+        try {
+            const actionMessage: Memory = {
+                id: uuidv4() as UUID,
+                roomId: uuidv4() as UUID,
+                userId: uuidv4() as UUID,
+                agentId: agentId as UUID,
+                content: { text: "", action: actionName }
+            };
+            console.log("[API] Created action message:", actionMessage);
+
+            const state: State = {
+                bio: "",
+                lore: "",
+                messageDirections: "",
+                postDirections: "",
+                replyDirections: "",
+                retweetDirections: "",
+                quoteDirections: "",
+                likeDirections: "",
+                roomId: uuidv4() as UUID,
+                actors: JSON.stringify([]),
+                recentMessages: JSON.stringify([actionMessage]),
+                recentMessagesData: [actionMessage]
+            };
+
+            let responseContent: Content | null = null;
+
+            console.log("[API] Processing action...");
+            await agent.processAction(
+                actionName,
+                actionMessage,
+                state,
+                async (content: Content) => {
+                    console.log("[API] Action callback received content:", content);
+                    responseContent = content;
+                    const response: Memory = { ...actionMessage, content };
+                    return Promise.resolve([response]);
+                },
+                options
+            );
+
+            console.log("[API] Action processed, sending response:", responseContent);
+            res.json({ 
+                success: true, 
+                content: responseContent 
+            });
+        } catch (error) {
+            console.error("[API] Action execution failed:", error);
+            res.status(500).json({ 
+                error: "Failed to execute action",
+                message: error.message 
+            });
+        }
     });
 
     router.post("/agents/:agentId/set", async (req, res) => {

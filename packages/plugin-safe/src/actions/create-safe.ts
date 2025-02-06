@@ -1,5 +1,6 @@
 import { Action, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { safeManager } from "../providers/safe-wallet";
+import { ethers } from 'ethers';
 
 export const createSafeAction: Action = {
     name: "createSafe",
@@ -9,23 +10,27 @@ export const createSafeAction: Action = {
         runtime: IAgentRuntime,
         _message: Memory,
         _state: State,
-        _options: any,
+        options: { ownerAddress: string },
         callback?: (response: { text: string; content?: Record<string, any> }) => void
     ) {
         try {
             // Initialize the Safe manager if not already initialized
             await safeManager.initialize(runtime);
 
-            // Get owner address from environment
-            const ownerAddress = runtime.getSetting("EVM_PUBLIC_KEY");
-            if (!ownerAddress) {
-                throw new Error("Owner address not found in environment");
+            // Get Nest's private key and derive its address
+            const nestPrivateKey = runtime.getSetting("EVM_PRIVATE_KEY");
+            if (!nestPrivateKey) {
+                throw new Error("Nest's private key not found in environment");
             }
 
-            // Get Nest address from environment
-            const nestAddress = runtime.getSetting("NEST_PUBLIC_KEY");
-            if (!nestAddress) {
-                throw new Error("Nest address not found in environment");
+            // Derive Nest's address from private key
+            const nestWallet = new ethers.Wallet(nestPrivateKey);
+            const nestAddress = await nestWallet.getAddress();
+
+            // Get user's address from options (passed from RainbowKit)
+            const { ownerAddress } = options;
+            if (!ownerAddress) {
+                throw new Error("User's wallet address not provided");
             }
 
             // Create the Safe using the manager

@@ -1,9 +1,10 @@
 import { Character, Clients, ModelProviderName } from "@elizaos/core";
+import { safePlugin } from "@elizaos/plugin-safe";
 
 export const nest: Character = {
     name: "Nest",
     username: "0xNestAI",
-    plugins: [],
+    plugins: [safePlugin],
     clients: [],
     modelProvider: ModelProviderName.HEURIST,
     settings: {
