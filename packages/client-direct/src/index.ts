@@ -44,35 +44,76 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 export const messageHandlerTemplate =
-    `# Action Examples
-    {{actionExamples}}
-    (Action examples are for reference only. Do not use the information from them in your response.)
+    `
+   # Character Profile
+{{agentName}} Details:
+{{bio}}
+{{lore}}
 
-    # Goals
-    {{goalsTemplate}}
+# Core Objectives
+Primary Goals:
+{{goals}}
 
-    # Knowledge
-    {{knowledge}}
+Supporting Data:
+{{goalsData}}
 
-    # Task: Generate dialog and actions for the character {{agentName}}.
-    About {{agentName}}:
-    {{bio}}
-    {{lore}}
+# Available Resources
+Knowledge Base:
+{{knowledge}}
 
-    {{providers}}
+Media Capabilities:
+- Can process images, videos, audio, text and PDFs
+- Recent media attachments:
+{{attachments}}
+Available Actions:
+{{actions}}
 
-    {{attachments}}
+Data Providers:
+{{providers}}
 
-    # Capabilities
-    Note that {{agentName}} is capable of reading/seeing/hearing various forms of media, including images, videos, audio, plaintext and PDFs. Recent attachments have been included above under the "Attachments" section.
+Message style:
+{{messageDirections}}
 
-    {{messageDirections}}
+# Conversation Context
+Recent Message History:
+{{recentMessageHistoy}}
 
-    {{recentMessages}}
+Current Message to respond to:
+{{currentMessage}}
 
-    {{actions}}
+# Response Directions and Task:
 
-    # Instructions: Write the next message for {{agentName}}.
+1. Message Analysis:
+  - Carefully review message history and current message
+  - Identify if the user is:
+    a) Asking a question
+    b) Requesting an action
+    c) Engaging in conversation
+    d) Providing information
+
+2. Knowledge Assessment:
+  - Check if required information exists in available knowledge
+  - If information is missing, identify appropriate action to obtain it
+  - Never fabricate information - use providers/actions to get facts
+
+3. Response Generation:
+  - For questions: Provide clear, accurate answers using available knowledge
+  - For action requests: Select most appropriate action if truly needed
+  - For conversation: Engage naturally while maintaining character persona
+  - For information: Acknowledge and incorporate into knowledge base
+
+4. Quality Controls:
+  - Verify response aligns with {{agentName}}'s personality
+  - Ensure progress toward goals when applicable
+  - Confirm factual accuracy
+  - IMPORTANT: Avoid repeating previous responses verbatim
+  - For time-related questions, always provide the current system time
+  - Keep responses concise and focused
+
+5. Key requirements:
+- action: Only include if specific action is needed
+- text: Natural response maintaining character voice
+
     ` + messageCompletionFooter;
 
 export class DirectClient {
@@ -255,11 +296,15 @@ export class DirectClient {
                     template: messageHandlerTemplate,
                 });
 
+                elizaLogger.log("context", context);
+
                 const response = await generateMessageResponse({
                     runtime: runtime,
                     context,
                     modelClass: ModelClass.LARGE,
                 });
+
+                elizaLogger.log("response", response);
 
                 if (!response) {
                     res.status(500).send(
