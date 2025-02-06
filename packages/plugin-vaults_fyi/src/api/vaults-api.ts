@@ -1,5 +1,5 @@
 import { IAgentRuntime } from "@elizaos/core";
-import { Chains, UserAsset, UserAssets, VaultDepositTx, VaultDetailed, VaultsDetailedPaginatedResponse } from "../types";
+import { Chains, HistoricalApy, HistoricalApyResponse, UserAsset, UserAssets, VaultDepositTx, VaultDetailed, VaultsDetailedPaginatedResponse } from "../types";
 
 class VaultsFyiApi {
     private readonly apiKey: string = '';
@@ -49,8 +49,8 @@ class VaultsFyiApi {
         return data;
     }
 
-    public async getAllVaults(): Promise<VaultDetailed[]> {
-        const cacheKey = `vaults_fyi/client/all_vaults`;
+    public async getAllVaults(network: Chains = 'arbitrum'): Promise<VaultDetailed[]> {
+        const cacheKey = `vaults_fyi/client/all_vaults_${network}`;
         const cachedData = await this.runtime.cacheManager.get(cacheKey);
         if (cachedData) {
             return cachedData as VaultDetailed[];
@@ -105,6 +105,40 @@ class VaultsFyiApi {
             }
         );
         return data;
+    }
+
+    public async getHistoricalApy({
+        vaultAddress,
+        network = 'arbitrum',
+        interval = '7day',
+        granularity = 86400,
+        from_timestamp = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60),
+        to_timestamp = Math.floor(Date.now() / 1000),
+    }: {
+        vaultAddress: string;
+        network: Chains;
+        interval?: '1day' | '7day' | '30day';
+        from_timestamp?: number;
+        to_timestamp?: number;
+        granularity?: number;
+    }): Promise<HistoricalApy[] | null> {
+        let page = 0;
+        let allData: HistoricalApy[] = [];
+        while (true) {
+            const data = await this.request<HistoricalApyResponse>(
+                `/vaults/${network}/${vaultAddress}/historical-apy`,
+                { interval, granularity, from_timestamp, to_timestamp, page }
+            );
+            if (!data) {
+                break;
+            }
+            allData = [...allData, ...data.data];
+            if (!data.next_page) {
+                break;
+            }
+            page++;
+        }
+        return allData;
     }
 
     private async request<T>(url: string, queryParams?: object, method: 'GET' | 'POST' = 'GET'): Promise<T> {

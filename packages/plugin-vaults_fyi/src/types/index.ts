@@ -148,3 +148,17 @@ export type UserVaultsAnalyzeLLMResponse = {
   riskWarnings: string[];
   additionalInsights: string[];
 }
+
+export type HistoricalApy = {
+  timestamp: number;
+  blockNumber: number;
+  apy: {
+    base: number;
+    total: number;
+  }
+}
+
+export type HistoricalApyResponse = {
+  next_page?: number;
+  data: HistoricalApy[];
+}
