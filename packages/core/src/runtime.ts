@@ -857,6 +857,8 @@ export class AgentRuntime implements IAgentRuntime {
             }
         );
 
+        elizaLogger.log("evaluatorPromises", evaluatorPromises);
+
         const resolvedEvaluators = await Promise.all(evaluatorPromises);
         const evaluatorsData = resolvedEvaluators.filter(
             (evaluator): evaluator is Evaluator => evaluator !== null
@@ -878,12 +880,16 @@ export class AgentRuntime implements IAgentRuntime {
                 evaluationTemplate,
         });
 
+        elizaLogger.log("EVALUATORS context", context);
+
         const result = await generateText({
             runtime: this,
             context,
             modelClass: ModelClass.SMALL,
             verifiableInferenceAdapter: this.verifiableInferenceAdapter,
         });
+
+        elizaLogger.log("EVALUATION RESULT", result);
 
         const evaluators = parseJsonArrayFromText(
             result
@@ -1034,6 +1040,8 @@ export class AgentRuntime implements IAgentRuntime {
         ]);
 
         const goals = formatGoalsAsString({ goals: goalsData });
+
+        elizaLogger.log("goals", goals);
 
         const actors = formatActors({ actors: actorsData ?? [] });
 
@@ -1324,7 +1332,11 @@ Text: ${attachment.text}
                           (() => {
                               const all = this.character?.style?.all || [];
                               const chat = this.character?.style?.chat || [];
-                              return [...all, ...chat].join("\n");
+                              const combined = [...all, ...chat];
+                              return combined
+                                  .sort(() => 0.5 - Math.random()) // Shuffle array
+                                  .slice(0, 3) // Take first 3 elements
+                                  .join("\n");
                           })()
                       )
                     : "",
@@ -1381,6 +1393,20 @@ Text: ${attachment.text}
             recentMessages:
                 recentMessages && recentMessages.length > 0
                     ? addHeader("# Conversation Messages", recentMessages)
+                    : "",
+            recentMessageHistoy:
+                recentMessages && recentMessages.length > 0
+                    ? addHeader(
+                          "# Conversation Messages",
+                          recentMessages.split("\n").slice(-11, -1).join("\n")
+                      )
+                    : "",
+            currentMessage:
+                recentMessages && recentMessages.length > 0
+                    ? addHeader(
+                          "# Current Message",
+                          recentMessages.split("\n").slice(-1)[0]
+                      )
                     : "",
             recentPosts:
                 recentPosts && recentPosts.length > 0
