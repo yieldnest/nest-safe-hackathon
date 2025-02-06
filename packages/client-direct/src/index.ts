@@ -80,6 +80,8 @@ export class DirectClient {
     private agents: Map<string, AgentRuntime>; // container management
     private server: any; // Store server instance
     public startAgent: Function; // Store startAgent functor
+    public loadCharacterTryPath: Function; // Store loadCharacterTryPath functor
+    public jsonToCharacter: Function; // Store jsonToCharacter functor
 
     constructor() {
         elizaLogger.log("DirectClient constructor");
