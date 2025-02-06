@@ -1324,7 +1324,6 @@ export async function generateMessageResponse({
     const max_context_length = modelSettings.maxInputTokens;
 
     context = await trimTokens(context, max_context_length, runtime);
-    elizaLogger.debug("Context:", context);
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
