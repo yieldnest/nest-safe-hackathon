@@ -1,6 +1,6 @@
 import { Action, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { safeManager } from "../providers/safe-wallet";
-import { ethers } from 'ethers';
+import { privateKeyToAccount } from 'viem/accounts';
 
 export const createSafeAction: Action = {
     name: "createSafe",
@@ -23,9 +23,10 @@ export const createSafeAction: Action = {
                 throw new Error("Nest's private key not found in environment");
             }
 
-            // Derive Nest's address from private key
-            const nestWallet = new ethers.Wallet(nestPrivateKey);
-            const nestAddress = await nestWallet.getAddress();
+            // Derive Nest's address from private key using viem
+            const formattedPrivateKey = nestPrivateKey.startsWith('0x') ? nestPrivateKey : `0x${nestPrivateKey}`;
+            const nestAccount = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
+            const nestAddress = nestAccount.address;
 
             // Get user's address from options (passed from RainbowKit)
             const { ownerAddress } = options;

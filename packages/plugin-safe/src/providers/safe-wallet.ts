@@ -1,71 +1,55 @@
 import { Provider, IAgentRuntime, Memory, State } from "@elizaos/core";
-import Safe, { EthersAdapter } from '@safe-global/protocol-kit'
-import SafeApiKit from '@safe-global/api-kit'
-import { ethers } from 'ethers'
-import { type SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
+import Safe, {
+    PredictedSafeProps,
+    SafeAccountConfig,
+    SafeDeploymentConfig
+} from '@safe-global/protocol-kit'
+import { Account } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { publicClient, createViemWalletClient } from './viem-client'
+import { sepolia } from 'viem/chains'
 
 // Required environment variables:
 // EVM_PROVIDER_URL=your_ethereum_rpc_url (RPC endpoint for the network)
 // EVM_PRIVATE_KEY=nest_wallet_private_key (Nest's private key for signing)
-// EVM_PUBLIC_KEY=your_wallet_address
-// NEST_PUBLIC_KEY=nest_wallet_address
-
-// Constants
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export class SafeWalletManager {
     private safe?: Safe;
     private safeAddress?: string;
-    private apiKit?: SafeApiKit;
-    private provider?: ethers.providers.JsonRpcProvider;
-    private signer?: ethers.Wallet;
-    private ethAdapter?: EthersAdapter;
+    private account?: Account;
+    private protocolKit?: Safe;
+    private walletClient?: ReturnType<typeof createViemWalletClient>;
+    private privateKey?: string;
+
 
     async initialize(runtime: IAgentRuntime) {
         console.log("[SafeWalletManager] Initializing...");
-        const providerUrl = runtime.getSetting("EVM_PROVIDER_URL");
-        const privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
+        this.privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
+
         
-        if (!providerUrl) {
-            console.error("[SafeWalletManager] Missing EVM_PROVIDER_URL");
-            throw new Error("Missing required setting: EVM_PROVIDER_URL");
-        }
-        if (!privateKey) {
+        if (!this.privateKey) {
             console.error("[SafeWalletManager] Missing EVM_PRIVATE_KEY");
             throw new Error("Missing required setting: EVM_PRIVATE_KEY");
         }
 
         try {
-            console.log("[SafeWalletManager] Setting up ethers provider and signer...");
+            console.log("[SafeWalletManager] Setting up account...");
             
-            // Create provider and signer
-            this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
-            this.signer = new ethers.Wallet(privateKey, this.provider);
+            const formattedPrivateKey = this.privateKey.startsWith('0x') ? this.privateKey : `0x${this.privateKey}`;
+            this.account = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
             
-            const address = await this.signer.getAddress();
-            console.log("[SafeWalletManager] Successfully derived Nest's address:", address);
+            this.walletClient = createViemWalletClient(formattedPrivateKey);
+            
+            console.log("[SafeWalletManager] Successfully derived Nest's address:", this.account.address);
 
             // Test connection
             try {
-                const network = await this.provider.getNetwork();
-                console.log("[SafeWalletManager] Successfully connected to provider, network:", network.chainId);
+                const chainId = await publicClient.getChainId();
+                console.log("[SafeWalletManager] Successfully connected to provider, network:", chainId);
             } catch (error) {
                 console.error("[SafeWalletManager] Failed to connect to provider:", error);
-                throw new Error(`Failed to connect to provider at ${providerUrl}`);
+                throw new Error(`Failed to connect to provider`);
             }
-
-            // Create ethers adapter
-            console.log("[SafeWalletManager] Creating Safe adapter...");
-            this.ethAdapter = new EthersAdapter({
-                ethers: ethers as any,
-                signerOrProvider: this.signer
-            });
-
-            console.log("[SafeWalletManager] Initializing Safe API Kit...");
-            this.apiKit = new SafeApiKit({
-                txServiceUrl: 'https://safe-transaction-sepolia.safe.global',
-                ethAdapter: this.ethAdapter
-            });
 
             console.log("[SafeWalletManager] Initialization complete");
         } catch (error) {
@@ -77,27 +61,67 @@ export class SafeWalletManager {
     async createSafe(ownerAddress: string, nestAddress: string) {
         try {
             console.log("[SafeWalletManager] Starting Safe creation...");
-            if (!this.ethAdapter) {
+            if (!this.account) {
                 throw new Error('Safe wallet not initialized. Call initialize() first.');
             }
             console.log("[SafeWalletManager] Using owners:", ownerAddress, nestAddress);
 
-            // Create and deploy new Safe
-            const safe = await Safe.create({
-                ethAdapter: this.ethAdapter,
-                predictedSafe: {
-                    safeAccountConfig: {
-                        owners: [ownerAddress, nestAddress],
-                        threshold: 2
-                    }
-                }
+            // Configure Safe Account
+            const safeAccountConfig: SafeAccountConfig = {
+                owners: [ownerAddress, nestAddress],
+                threshold: 2
+            };
+
+            // Create predicted Safe configuration
+            const predictedSafe: PredictedSafeProps = {
+                safeAccountConfig
+            };
+
+            console.log("[SafeWalletManager] Predicted Safe configuration:", predictedSafe);
+
+            this.protocolKit = await Safe.init({
+                provider: sepolia.rpcUrls.default.http[0],
+                signer: this.privateKey,
+                predictedSafe
             });
 
-            console.log("[SafeWalletManager] Safe instance created");
+            // Get the predicted address
+            this.safeAddress = await this.protocolKit.getAddress();
+            console.log("[SafeWalletManager] Predicted Safe address:", this.safeAddress);
 
-            this.safe = safe;
-            this.safeAddress = await safe.getAddress();
-            console.log("[SafeWalletManager] Safe deployed at address:", this.safeAddress);
+            // Create deployment transaction
+            const deploymentTransaction = await this.protocolKit.createSafeDeploymentTransaction();
+
+            // Execute deployment transaction using viem
+            // Execute deployment transaction using viem
+            const transactionHash = await this.walletClient.
+            sendTransaction({
+                account: this.account,
+                to: deploymentTransaction.to as `0x${string}`,
+                value: BigInt(deploymentTransaction.value || '0'),
+                data: deploymentTransaction.data as `0x${string}`,
+                chain: sepolia,
+                kzg: undefined 
+            });
+
+            // Wait for transaction to be mined
+            const transactionReceipt = await publicClient.waitForTransactionReceipt({
+                hash: transactionHash
+            });
+
+            // Connect to the deployed Safe
+            this.safe = await this.protocolKit.connect({
+                safeAddress: this.safeAddress
+            });
+
+            const isDeployed = await this.safe.isSafeDeployed();
+            console.log("[SafeWalletManager] Safe deployed:", isDeployed);
+
+            // Get Safe info
+            const safeOwners = await this.safe.getOwners();
+            const safeThreshold = await this.safe.getThreshold();
+            console.log("[SafeWalletManager] Safe owners:", safeOwners);
+            console.log("[SafeWalletManager] Safe threshold:", safeThreshold);
 
             return this.safeAddress;
         } catch (error) {
@@ -106,59 +130,33 @@ export class SafeWalletManager {
         }
     }
 
-    async signTransaction(tx: SafeTransactionDataPartial) {
-        if (!this.safe || !this.safeAddress) {
-            throw new Error('No Safe initialized');
-        }
-
-        try {
-            // Create and sign transaction
-            const safeTransaction = await this.safe.createTransaction({ safeTransactionData: tx });
-            const safeTxHash = await this.safe.getTransactionHash(safeTransaction);
-            const signature = await this.safe.signTransactionHash(safeTxHash);
-
-            // Propose transaction to the Safe Transaction Service
-            if (this.apiKit) {
-                await this.apiKit.proposeTransaction({
-                    safeAddress: this.safeAddress,
-                    safeTransactionData: {
-                        ...tx,
-                        operation: tx.operation || 0, // Default to Call operation if not specified
-                        safeTxGas: tx.safeTxGas || '0',
-                        baseGas: tx.baseGas || '0',
-                        gasPrice: tx.gasPrice || '0',
-                        gasToken: tx.gasToken || ZERO_ADDRESS,
-                        refundReceiver: tx.refundReceiver || ZERO_ADDRESS,
-                        nonce: tx.nonce || await this.safe.getNonce()
-                    },
-                    safeTxHash,
-                    senderSignature: signature.data,
-                    senderAddress: await this.safe.getAddress()
-                });
-            }
-
-            return signature;
-        } catch (error) {
-            console.error('Error signing transaction:', error);
-            throw error;
-        }
-    }
-
     async loadExistingSafe(safeAddress: string) {
         try {
-            if (!this.ethAdapter) {
+            if (!this.account || !this.walletClient) {
                 throw new Error('Safe wallet not initialized. Call initialize() first.');
             }
 
-            // Initialize existing Safe
-            const safe = await Safe.create({
-                ethAdapter: this.ethAdapter,
+            // Initialize Protocol Kit with existing Safe
+            this.protocolKit = await Safe.init({
+                provider: sepolia.rpcUrls.default.http[0],
+                signer: this.privateKey,
                 safeAddress
             });
 
-            this.safe = safe;
+            // Connect to the Safe
+            this.safe = await this.protocolKit.connect({
+                safeAddress
+            });
+
             this.safeAddress = safeAddress;
-            return safe;
+
+            // Get Safe info
+            const isDeployed = await this.safe.isSafeDeployed();
+            const safeOwners = await this.safe.getOwners();
+            const safeThreshold = await this.safe.getThreshold();
+            console.log("[SafeWalletManager] Safe deployed:", isDeployed);
+
+            return this.safe;
         } catch (error) {
             console.error('Error loading existing Safe:', error);
             throw error;

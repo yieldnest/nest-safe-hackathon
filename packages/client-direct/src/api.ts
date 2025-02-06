@@ -68,9 +68,7 @@ export function createApiRouter(
     router.post("/agents/:agentId/action/:actionName", async (req, res) => {
         const { agentId, actionName } = req.params;
         const options = req.body;
-        
-        console.log("[API] Action request received:", { agentId, actionName, options });
-        
+                
         const agent = agents.get(agentId);
         if (!agent) {
             console.error("[API] Agent not found:", agentId);
@@ -86,7 +84,6 @@ export function createApiRouter(
                 agentId: agentId as UUID,
                 content: { text: "", action: actionName }
             };
-            console.log("[API] Created action message:", actionMessage);
 
             const state: State = {
                 bio: "",
@@ -105,13 +102,11 @@ export function createApiRouter(
 
             let responseContent: Content | null = null;
 
-            console.log("[API] Processing action...");
             await agent.processAction(
                 actionName,
                 actionMessage,
                 state,
                 async (content: Content) => {
-                    console.log("[API] Action callback received content:", content);
                     responseContent = content;
                     const response: Memory = { ...actionMessage, content };
                     return Promise.resolve([response]);
@@ -119,7 +114,6 @@ export function createApiRouter(
                 options
             );
 
-            console.log("[API] Action processed, sending response:", responseContent);
             res.json({ 
                 success: true, 
                 content: responseContent 
@@ -135,7 +129,6 @@ export function createApiRouter(
 
     router.post("/agents/:agentId/set", async (req, res) => {
         const agentId = req.params.agentId;
-        console.log("agentId", agentId);
         let agent: AgentRuntime = agents.get(agentId);
 
         // update character
