@@ -1,5 +1,9 @@
 import type { Plugin } from "@elizaos/core";
-import { getVaultYieldsForUserAction, generateVaultTxAction } from "./actions";
+import {
+    getVaultYieldsForUserAction,
+    getAllVaultsAction,
+    analyzeYieldTokenAction,
+} from "./actions";
 
 export const vaultsFyiPlugin: Plugin = {
     name: "vaults_fyi",
@@ -9,7 +13,8 @@ export const vaultsFyiPlugin: Plugin = {
     services: [],
     actions: [
         getVaultYieldsForUserAction,
-        generateVaultTxAction
+        getAllVaultsAction,
+        analyzeYieldTokenAction,
     ],
 };
 

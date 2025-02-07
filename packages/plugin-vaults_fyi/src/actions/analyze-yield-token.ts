@@ -1,16 +1,37 @@
-import { Action, composeContext, generateMessageResponse, IAgentRuntime, Memory, ModelClass, parseJSONObjectFromText, State } from "@elizaos/core";
+import {
+    Action,
+    composeContext,
+    generateMessageResponse,
+    IAgentRuntime,
+    Memory,
+    ModelClass,
+    parseJSONObjectFromText,
+    State,
+} from "@elizaos/core";
 import { initVaultsFyiApi } from "../api/vaults-api";
-import { Chains, HistoricalApy, UserVaultsAnalyzeLLMResponse, VaultDetailed } from "../types";
-import { singleVaultAnalysisTemplate, singleVaultTextAnalysisTemplate } from "../templates";
+import {
+    Chains,
+    HistoricalApy,
+    UserVaultsAnalyzeLLMResponse,
+    VaultDetailed,
+} from "../types";
+import {
+    singleVaultAnalysisTemplate,
+    singleVaultTextAnalysisTemplate,
+} from "../templates";
 
-export const getAllVaultsAction: Action = {
+export const analyzeYieldTokenAction: Action = {
     name: "ANALYZE_YIELD_TOKEN",
-    description: "Use this action when you want to learn more about a specific yield strategy.",  
+    description:
+        "Use this action when you want to learn more about a specific yield strategy.",
     handler: async (
-        runtime: IAgentRuntime, 
-        message: Memory, 
-        _state: State, 
-        options: { vaultAddress: string, network: Chains } = { vaultAddress: '', network: 'arbitrum' }, 
+        runtime: IAgentRuntime,
+        message: Memory,
+        _state: State,
+        options: { vaultAddress: string; network: Chains } = {
+            vaultAddress: "",
+            network: "arbitrum",
+        },
         callback
     ) => {
         if (!options.vaultAddress) {
@@ -52,7 +73,7 @@ export const getAllVaultsAction: Action = {
         }
 
         const { json, text } = response;
-        
+
         callback({
             text: text,
             analysis: JSON.stringify(json ?? {}),
@@ -64,14 +85,14 @@ export const getAllVaultsAction: Action = {
         const vaultsFyiApiKey = runtime.getSetting("VAULTS_FYI_API_KEY");
         return typeof vaultsFyiApiKey === "string";
     },
-}
+};
 
 const analyzeVault = async (
     runtime: IAgentRuntime,
     vault: VaultDetailed,
     apyData: HistoricalApy[],
     message: Memory
-): Promise<{json: UserVaultsAnalyzeLLMResponse, text: string} | null> => {
+): Promise<{ json: UserVaultsAnalyzeLLMResponse; text: string } | null> => {
     const state = await runtime.composeState(message, {
         vaultData: vault,
         historicalApyData: apyData,
@@ -109,7 +130,6 @@ const analyzeVault = async (
         // we wait a valid json response
         return null;
     }
-
 
     const contextText = composeContext({
         state,
