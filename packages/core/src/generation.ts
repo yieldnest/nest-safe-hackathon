@@ -237,6 +237,7 @@ export async function generateText({
     onStepFinish,
     maxSteps = 1,
     stop,
+    customTemperature,
     customSystemPrompt,
     verifiableInference = process.env.VERIFIABLE_INFERENCE_ENABLED === "true",
     verifiableInferenceOptions,
@@ -248,6 +249,7 @@ export async function generateText({
     onStepFinish?: (event: StepResult) => Promise<void> | void;
     maxSteps?: number;
     stop?: string[];
+    customTemperature?: number;
     customSystemPrompt?: string;
     verifiableInference?: boolean;
     verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
@@ -384,7 +386,9 @@ export async function generateText({
 
     const modelConfiguration = runtime.character?.settings?.modelConfig;
     const temperature =
-        modelConfiguration?.temperature || modelSettings.temperature;
+        customTemperature ||
+        modelConfiguration?.temperature ||
+        modelSettings.temperature;
     const frequency_penalty =
         modelConfiguration?.frequency_penalty ||
         modelSettings.frequency_penalty;
