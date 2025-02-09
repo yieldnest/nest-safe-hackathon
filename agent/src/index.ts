@@ -113,6 +113,7 @@ function mergeCharacters(base: Character, child: Character): Character {
     };
     return mergeObjects(base, child);
 }
+
 async function loadCharacter(filePath: string): Promise<Character> {
     const content = tryLoadFile(filePath);
     if (!content) {
@@ -736,7 +737,7 @@ const checkPortAvailable = (port: number): Promise<boolean> => {
 
 const startAgents = async () => {
     const directClient = new DirectClient();
-    let serverPort = parseInt(settings.SERVER_PORT || "3000");
+    let serverPort = Number.parseInt(settings.SERVER_PORT || "3000");
     const args = parseArguments();
     let charactersArg = args.characters || args.character;
     let characters = [nest];
@@ -764,7 +765,7 @@ const startAgents = async () => {
     }
 
     // upload some agent functionality into directClient
-    directClient.startAgent = async (character: Character) => {
+    directClient.startAgent = async (character) => {
         // Handle plugins
         character.plugins = await handlePluginImporting(character.plugins);
         // wrap it so we don't have to inject directClient later
