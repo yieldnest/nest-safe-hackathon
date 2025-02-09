@@ -31,7 +31,15 @@ export const getAllVaultsAction: Action = {
         const vaultsFyiApi = initVaultsFyiApi(runtime);
         const vaults = await vaultsFyiApi.getAllVaults(options.network);
 
-        elizaLogger.log("GET ALL VAULTS RESULT", vaults);
+        const sortedVaults = vaults
+            .sort((a, b) => {
+                const aApy = a.apy.total["1day"] || 0;
+                const bApy = b.apy.total["1day"] || 0;
+                return bApy - aApy;
+            })
+            .slice(0, 20);
+
+        elizaLogger.log("GET ALL VAULTS RESULT", sortedVaults);
 
         if (!vaults) {
             callback({
@@ -40,7 +48,7 @@ export const getAllVaultsAction: Action = {
             return;
         }
 
-        const stringifiedVaults = JSON.stringify(vaults);
+        const stringifiedVaults = JSON.stringify(sortedVaults);
 
         const state = await runtime.composeState(message, {
             vaults: stringifiedVaults,
