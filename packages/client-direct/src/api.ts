@@ -1,21 +1,21 @@
-import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import path from "path";
+import express from "express";
 import fs from "fs";
+import path from "path";
 
 import {
     type AgentRuntime,
+    type Character,
     elizaLogger,
     getEnvVariable,
     type UUID,
     validateCharacterConfig,
-    type Character,
 } from "@elizaos/core";
 
+import { validateUuid } from "@elizaos/core";
 import { REST, Routes } from "discord.js";
 import type { DirectClient } from ".";
-import { validateUuid } from "@elizaos/core";
 
 interface UUIDParams {
     agentId: UUID;
@@ -54,7 +54,14 @@ export function createApiRouter(
 ) {
     const router = express.Router();
 
-    router.use(cors());
+    router.use(
+        cors({
+            origin: "http://localhost:5173", // Specify exact origin
+            credentials: true,
+            methods: ["GET", "POST", "OPTIONS"],
+            allowedHeaders: ["Content-Type"],
+        })
+    );
     router.use(bodyParser.json());
     router.use(bodyParser.urlencoded({ extended: true }));
     router.use(
