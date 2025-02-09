@@ -2,7 +2,6 @@ import {
     Action,
     ActionExample,
     composeContext,
-    elizaLogger,
     generateText,
     IAgentRuntime,
     Memory,
@@ -39,8 +38,6 @@ export const getAllVaultsAction: Action = {
             })
             .slice(0, 20);
 
-        elizaLogger.log("GET ALL VAULTS RESULT", sortedVaults);
-
         if (!vaults) {
             callback({
                 text: "Failed to get all vaults",
@@ -60,16 +57,12 @@ export const getAllVaultsAction: Action = {
             template: analyzeVaultsTemplate,
         });
 
-        elizaLogger.log("Context to analyze data", context);
-
         const analyzedVaults = await generateText({
             runtime,
             context: context,
             modelClass: ModelClass.LARGE,
             customTemperature: 0.4,
         });
-
-        elizaLogger.log("ANALYZE VAULTS TEXT", analyzedVaults);
 
         callback({
             text: analyzedVaults,
@@ -154,6 +147,6 @@ For each recommended vault, you MUST include the complete information exactly as
 Before listing the vaults, share your thought process in a conversational way (300 characters max), explaining why these options stood out to you and any relevant risks or trade-offs.
 
 After presenting the options, close with a brief question about whether these options align with what they're looking for or if they'd like to explore different criteria.
-
+Remeber, this is research you are doing for the user, so be sure to include all the information they need to make a decision, and that the math is correct if you did any math.
 Important: Double-check that all addresses and links are copied in full, exactly as they appear in the data.
 `;
