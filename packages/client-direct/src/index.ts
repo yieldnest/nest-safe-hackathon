@@ -312,15 +312,11 @@ export class DirectClient {
                     template: messageHandlerTemplate,
                 });
 
-                elizaLogger.log("context", context);
-
                 const response = await generateMessageResponse({
                     runtime: runtime,
                     context,
                     modelClass: ModelClass.LARGE,
                 });
-
-                elizaLogger.log("response", response);
 
                 if (!response) {
                     res.status(500).send(
@@ -446,7 +442,6 @@ export class DirectClient {
             try {
                 // 1) Retrieve the runtime, memory, etc. from jobData
                 const { runtime, memory } = jobData;
-                console.log("WHAT IS THE MEMORY?", memory);
                 // 2) Possibly generate an immediate response from the agent
                 // For example:
                 let state = await runtime.composeState(memory, {
@@ -522,230 +517,7 @@ export class DirectClient {
             }
         });
 
-        // ! Stream message endpoint
-        this.app.post(
-            "/:agentId/streamMessage",
-            upload.single("file"),
-            async (req: express.Request, res: express.Response) => {
-                res.setHeader("Content-Type", "text/event-stream");
-                res.setHeader("Cache-Control", "no-cache");
-                res.setHeader("Connection", "keep-alive");
-
-                res.write(":ok\n\n");
-                // (If `res.flush()` is available, call it here)
-                if (typeof res.flush === "function") {
-                    res.flush();
-                }
-
-                // Helper function to send SSE messages
-                const sendSSEMessage = (data: any) => {
-                    res.write(`data: ${JSON.stringify(data)}\n\n`);
-                    console.log("Sending SSE message:", data);
-                    if (typeof res.flush === "function") {
-                        res.flush();
-                    }
-                };
-
-                try {
-                    const agentId = req.params.agentId;
-                    const roomId = stringToUuid(
-                        req.body.roomId ?? "default-room-" + agentId
-                    );
-                    const userId = stringToUuid(req.body.userId ?? "user");
-
-                    let runtime = this.agents.get(agentId);
-
-                    if (!runtime) {
-                        runtime = Array.from(this.agents.values()).find(
-                            (a) =>
-                                a.character.name.toLowerCase() ===
-                                agentId.toLowerCase()
-                        );
-                    }
-
-                    if (!runtime) {
-                        sendSSEMessage({
-                            type: "error",
-                            message: "Agent not found",
-                        });
-                        res.end();
-                        return;
-                    }
-
-                    // Setup and initial message processing
-                    await runtime.ensureConnection(
-                        userId,
-                        roomId,
-                        req.body.userName,
-                        req.body.name,
-                        "direct"
-                    );
-
-                    const text = req.body.text;
-                    const messageId = stringToUuid(Date.now().toString());
-
-                    // Handle file attachments
-                    const attachments: Media[] = [];
-                    if (req.file) {
-                        const filePath = path.join(
-                            process.cwd(),
-                            "agent",
-                            "data",
-                            "uploads",
-                            req.file.filename
-                        );
-                        attachments.push({
-                            id: Date.now().toString(),
-                            url: filePath,
-                            title: req.file.originalname,
-                            source: "direct",
-                            description: `Uploaded file: ${req.file.originalname}`,
-                            text: "",
-                            contentType: req.file.mimetype,
-                        });
-                    }
-
-                    const content: Content = {
-                        text,
-                        attachments,
-                        source: "direct",
-                        inReplyTo: undefined,
-                    };
-
-                    const userMessage = {
-                        content,
-                        userId,
-                        roomId,
-                        agentId: runtime.agentId,
-                    };
-
-                    // Create and save memory
-                    const memory: Memory = {
-                        id: stringToUuid(messageId + "-" + userId),
-                        ...userMessage,
-                        agentId: runtime.agentId,
-                        userId,
-                        roomId,
-                        content,
-                        createdAt: Date.now(),
-                    };
-
-                    await runtime.messageManager.addEmbeddingToMemory(memory);
-                    await runtime.messageManager.createMemory(memory);
-
-                    // Generate initial response
-                    let state = await runtime.composeState(userMessage, {
-                        agentName: runtime.character.name,
-                    });
-
-                    const context = composeContext({
-                        state,
-                        template: messageHandlerTemplate,
-                    });
-
-                    const response = await generateMessageResponse({
-                        runtime: runtime,
-                        context,
-                        modelClass: ModelClass.LARGE,
-                    });
-
-                    if (!response) {
-                        sendSSEMessage({
-                            type: "error",
-                            message: "No response from generateMessageResponse",
-                        });
-                        res.end();
-                        return;
-                    }
-
-                    // Save response to memory
-                    const responseMessage: Memory = {
-                        id: stringToUuid(messageId + "-" + runtime.agentId),
-                        ...userMessage,
-                        userId: runtime.agentId,
-                        content: response,
-                        embedding: getEmbeddingZeroVector(),
-                        createdAt: Date.now(),
-                    };
-
-                    await runtime.messageManager.createMemory(responseMessage);
-
-                    // Check if we should suppress the initial message
-                    const action = runtime.actions.find(
-                        (a) => a.name === response.action
-                    );
-
-                    const shouldSuppressInitialMessage =
-                        action?.suppressInitialMessage;
-
-                    if (!shouldSuppressInitialMessage) {
-                        sendSSEMessage({
-                            type: "message",
-                            content: response,
-                            isFirstMessage: true,
-                        });
-                    }
-                    setTimeout(() => {
-                        setImmediate(async () => {
-                            try {
-                                // Perform the heavier logic that might block the event loop
-                                // or any additional SSE messages you want to send
-                                state =
-                                    await runtime.updateRecentMessageState(
-                                        state
-                                    );
-
-                                let followUpMessage: Content | null = null;
-                                await runtime.processActions(
-                                    memory,
-                                    [responseMessage],
-                                    state,
-                                    async (newMessages) => {
-                                        followUpMessage = newMessages;
-                                        return [memory];
-                                    }
-                                );
-
-                                await runtime.evaluate(memory, state);
-
-                                // If there's a follow-up message, send it
-                                if (followUpMessage) {
-                                    sendSSEMessage({
-                                        type: "message",
-                                        content: followUpMessage,
-                                        isFollowUp: true,
-                                    });
-                                }
-
-                                // Finally, send "complete" and end the stream
-                                sendSSEMessage({ type: "complete" });
-                                res.end();
-                            } catch (error) {
-                                sendSSEMessage({
-                                    type: "error",
-                                    message:
-                                        error instanceof Error
-                                            ? error.message
-                                            : "Unknown error occurred",
-                                });
-                                res.end();
-                            }
-                        });
-                    }, 10000); // 5000ms delay
-                } catch (error) {
-                    sendSSEMessage({
-                        type: "error",
-                        message:
-                            error instanceof Error
-                                ? error.message
-                                : "Unknown error occurred",
-                    });
-                    res.end();
-                }
-            }
-        );
-
-        // Replaces /:agentId/streamMessage
+        // ! Used to stream messages to the client
         this.app.post(
             "/:agentId/startConversation",
             upload.single("file"),
