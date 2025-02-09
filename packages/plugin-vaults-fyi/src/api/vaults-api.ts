@@ -59,7 +59,7 @@ class VaultsFyiApi {
     // per_page = 100 is the maximum
     public async getVaultsDetailed(
         page: number,
-        pageSize: number = 20
+        pageSize: number = 50
     ): Promise<VaultsDetailedPaginatedResponse | null> {
         const data = await this.request<VaultsDetailedPaginatedResponse>(
             `/detailed/vaults`,
