@@ -1394,7 +1394,7 @@ Text: ${attachment.text}
                 recentMessages && recentMessages.length > 0
                     ? addHeader("# Conversation Messages", recentMessages)
                     : "",
-            recentMessageHistoy:
+            recentMessageHistory:
                 recentMessages && recentMessages.length > 0
                     ? addHeader(
                           "# Conversation Messages",
