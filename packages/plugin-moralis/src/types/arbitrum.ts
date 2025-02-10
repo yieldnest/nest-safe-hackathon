@@ -114,3 +114,37 @@ export type SearchQueryResult = {
     addresses: ProtocolAddress[];
   }
 };
+
+export type TokenMetadata = {
+  address: string;
+  address_label: string | null;
+  name: string;
+  symbol: string;
+  decimals: string;
+  logo: string;
+  logo_hash: string | null;
+  thumbnail: string;
+  total_supply: string;
+  total_supply_formatted: string;
+  fully_diluted_valuation: string;
+  block_number: string;
+  validated: number;
+  created_at: string;
+  possible_spam: boolean;
+  verified_contract: boolean;
+  categories: string[];
+  links: {
+    reddit: string;
+    twitter: string;
+    website: string;
+    moralis: string;
+  };
+  security_score: number;
+  description: string | null;
+  circulating_supply: string;
+  market_cap: string;
+}
+
+export interface TokenMetadataContent {
+  tokenAddress: string;
+}
