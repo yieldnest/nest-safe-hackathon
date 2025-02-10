@@ -22,7 +22,6 @@ const { chains, publicClient } = configureChains(
 
 // Set up wallet connectors
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
-console.log('WalletConnect Project ID:', projectId); // Debug log
 
 if (!projectId) {
     throw new Error('WalletConnect Project ID is required. Please add VITE_WALLETCONNECT_PROJECT_ID to your .env file');

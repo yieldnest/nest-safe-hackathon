@@ -31,15 +31,15 @@ export function CreateSafeCard() {
         }
 
         try {
-            // Call the createSafe action through the API
-            const response = await apiClient.executeAction("createSafe", {
+            // Call the DEPLOY_NEW_SAFE_ACCOUNT action through the API
+            const response = await apiClient.executeAction("DEPLOY_NEW_SAFE_ACCOUNT", {
                 ownerAddress: address,
             }, agentId);
 
             if (response.success) {
                 toast({
                     title: "Safe Created!",
-                    description: `Your Safe wallet has been created at ${response.safeAddress}`,
+                    description: `Your Safe wallet has been created at ${response.content?.safeAddress || response.safeAddress}`,
                 });
             } else {
                 throw new Error(response.error || "Failed to create Safe");

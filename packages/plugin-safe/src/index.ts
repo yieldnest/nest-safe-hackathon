@@ -1,16 +1,18 @@
-import { Plugin } from "@elizaos/core";
-import { createSafeAction } from "./actions/create-safe";
-import { safeWalletProvider } from "./providers/safe-wallet";
+import { type Plugin } from '@elizaos/core';
+import { createSafeAction } from './actions/createSafeAction';
+import { deployNewSafeAction } from './actions/deployNewSafeAction';
+import { checkSafeAction } from './actions/checkSafeAction'; 
 
-console.log("[SafePlugin] Initializing Safe plugin...");
-console.log("[SafePlugin] Registering actions:", createSafeAction.name);
-console.log("[SafePlugin] Registering providers:", "safeWalletProvider");
+console.log("Initializing Safe Plugin...");
 
 export const safePlugin: Plugin = {
-    name: "safe",
-    description: "Safe wallet integration plugin for creating and managing Safe smart contract wallets",
-    actions: [createSafeAction],
-    providers: [safeWalletProvider],
-    evaluators: [],
-    services: []
-}; 
+  name: 'Safe Protocol Integration',
+  description: 'Plugin for integrating Safe protocol wallet functionality',
+  providers: [],
+  evaluators: [],
+  services: [],
+  actions: [deployNewSafeAction, checkSafeAction]
+};
+
+export const pluginSafe = safePlugin;
+export default safePlugin;
