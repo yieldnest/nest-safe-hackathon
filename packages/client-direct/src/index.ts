@@ -44,7 +44,7 @@ const upload = multer({ storage });
 
 export const messageHandlerTemplate =
     `
-   # Character Profile
+ # Character Profile
 {{agentName}} Details:
 {{bio}}
 
@@ -71,7 +71,7 @@ Message style:
 
 # Conversation Context
 Recent Message History:
-{{recentMessageHistoy}}
+{{recentMessageHistory}}
 
 Current Message to respond to:
 {{currentMessage}}
@@ -79,38 +79,38 @@ Current Message to respond to:
 # Response Directions and Task:
 
 1. Message Analysis:
-  - Carefully review message history and current message
-  - Identify if the user is:
-    a) Asking a question
-    b) Requesting an action
-    c) Engaging in conversation
-    d) Providing information
+- Carefully review message history and current message
+- Identify if the user is:
+  a) Asking a question
+  b) Requesting an action
+  c) Engaging in conversation
+  d) Providing information
 
 2. Knowledge Assessment:
-  - Check if required information exists in available knowledge
-  - If information is missing, identify appropriate action to obtain it
-  - Never fabricate information - use providers/actions to get facts
+- Check if required information exists in available knowledge
+- If information is missing, identify appropriate action to obtain it
+- Never fabricate information - use providers/actions to get facts
 
 3. Response Generation:
-  - For questions: Provide clear, accurate answers using available knowledge
-  - For action requests: Select most appropriate action if truly needed
-  - For conversation: Engage naturally while maintaining character persona
-  - For information: Acknowledge and incorporate into knowledge base
+- For questions: Provide clear, accurate answers using available knowledge
+- For action requests: Select most appropriate action if truly needed
+- For conversation: Engage naturally while maintaining character persona
+- For information: Acknowledge and incorporate into knowledge base
 
 4. Quality Controls:
-  - Verify response aligns with {{agentName}}'s personality
-  - Ensure progress toward goals when applicable
-  - Confirm factual accuracy
-  - IMPORTANT: Avoid repeating previous responses verbatim
-  - For time-related questions, always provide the current system time
-  - Keep responses concise and focused. Shorter reponses are better.
+- Verify response aligns with {{agentName}}'s personality
+- Ensure progress toward goals when applicable
+- Confirm factual accuracy
+- IMPORTANT: Avoid repeating previous responses verbatim
+- For time-related questions, always provide the current system time
+- Keep responses concise and focused. Shorter reponses are better.
 
 5. Key requirements:
 - action: Only include if specific action is needed
 - text: Natural response maintaining character voice
 - If an action is selected, let the user know what are you doing that they they should wait for the next message
 
-    ` + messageCompletionFooter;
+  ` + messageCompletionFooter;
 
 export class DirectClient {
     public app: express.Application;
@@ -421,16 +421,6 @@ export class DirectClient {
                 res.flush();
             }
 
-            const { jobId, agentId } = req.params;
-            const jobData = this.jobs[jobId];
-            if (!jobData) {
-                res.write(
-                    `data: ${JSON.stringify({ type: "error", msg: "No such jobId" })}\n\n`
-                );
-                res.end();
-                return;
-            }
-
             // Helper to send SSE frames
             function sendSSE(data: any) {
                 res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -439,11 +429,19 @@ export class DirectClient {
                 }
             }
 
+            const { jobId } = req.params;
+            const jobData = this.jobs[jobId];
+            if (!jobData) {
+                sendSSE({ type: "error", msg: "No such jobId" });
+                res.end();
+                return;
+            }
+
             try {
                 // 1) Retrieve the runtime, memory, etc. from jobData
                 const { runtime, memory } = jobData;
-                // 2) Possibly generate an immediate response from the agent
-                // For example:
+
+                // 2) Generate response
                 let state = await runtime.composeState(memory, {
                     agentName: runtime.character.name,
                 });
@@ -453,11 +451,15 @@ export class DirectClient {
                     template: messageHandlerTemplate,
                 });
 
+                elizaLogger.info("context in DIRECT CLIENT", context);
+
                 const response = await generateMessageResponse({
                     runtime,
                     context,
                     modelClass: ModelClass.LARGE,
                 });
+
+                elizaLogger.info("response in DIRECT CLIENT", response);
 
                 if (!response) {
                     sendSSE({
@@ -468,23 +470,41 @@ export class DirectClient {
                     return;
                 }
 
-                // 3) Save the response as memory, if needed
+                // 3) Save the response as memory with proper Content structure
+                const responseContent: Content = {
+                    text: response.text,
+                    action: response.action,
+                    attachments: [],
+                    source: "direct",
+                    inReplyTo: memory.id, // Reference the original message
+                };
+
                 const responseMessage: Memory = {
                     id: stringToUuid(
                         Date.now().toString() + "-response-" + jobId
                     ),
-                    ...memory, // or build a new userMessage structure
+                    agentId: runtime.agentId,
                     userId: runtime.agentId,
-                    content: response,
-                    embedding: getEmbeddingZeroVector(),
+                    roomId: memory.roomId,
+                    content: responseContent,
                     createdAt: Date.now(),
                 };
+
+                elizaLogger.info(
+                    "responseMessage in DIRECT CLIENT",
+                    responseMessage
+                );
+
+                // Add embedding before saving
+                await runtime.messageManager.addEmbeddingToMemory(
+                    responseMessage
+                );
                 await runtime.messageManager.createMemory(responseMessage);
 
-                // 4) Optionally send the first SSE chunk
-                sendSSE({ type: "message", content: response });
+                // 4) Send the first SSE chunk
+                sendSSE({ type: "message", content: responseContent });
 
-                // 5) Further steps: update state, processActions, etc.
+                // 5) Process actions and handle follow-up
                 state = await runtime.updateRecentMessageState(state);
 
                 let followUpMessage: Content | null = null;
@@ -501,6 +521,22 @@ export class DirectClient {
                 await runtime.evaluate(memory, state);
 
                 if (followUpMessage) {
+                    const followUpMemory: Memory = {
+                        id: stringToUuid(
+                            Date.now().toString() + "-followup-" + jobId
+                        ),
+                        agentId: runtime.agentId,
+                        userId: runtime.agentId,
+                        roomId: memory.roomId,
+                        content: followUpMessage,
+                        createdAt: Date.now(),
+                    };
+
+                    await runtime.messageManager.addEmbeddingToMemory(
+                        followUpMemory
+                    );
+                    await runtime.messageManager.createMemory(followUpMemory);
+
                     sendSSE({ type: "message", content: followUpMessage });
                 }
 
