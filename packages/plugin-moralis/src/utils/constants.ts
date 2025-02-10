@@ -21,6 +21,8 @@ export const API_ENDPOINTS = {
             `https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=arbitrum`,
         SEARCH_PROTOCOL: (protocolName: string) =>
             `https://deep-index.moralis.io/api/v2.2/entities/search?query=${protocolName}`,
+        PAIR_OHLCV: (pairAddress: string) =>
+            `https://deep-index.moralis.io/api/v2.2/pairs/${pairAddress}/ohlcv?chain=arbitrum`,
     },
 } as const;
 
