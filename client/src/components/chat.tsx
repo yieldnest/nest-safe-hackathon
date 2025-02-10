@@ -6,23 +6,23 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { useTransition, animated, type AnimatedProps } from "@react-spring/web";
-import { Paperclip, Send, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import type { Content, UUID } from "@elizaos/core";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import { cn, moment } from "@/lib/utils";
-import { Avatar, AvatarImage } from "./ui/avatar";
-import CopyButton from "./copy-button";
-import ChatTtsButton from "./ui/chat/chat-tts-button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
-import AIWriter from "react-aiwriter";
 import type { IAttachment } from "@/types";
+import type { Content, UUID } from "@elizaos/core";
+import { animated, useTransition, type AnimatedProps } from "@react-spring/web";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Paperclip, Send, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import AIWriter from "react-aiwriter";
 import { AudioRecorder } from "./audio-recorder";
+import CopyButton from "./copy-button";
+import { Avatar, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
+import ChatTtsButton from "./ui/chat/chat-tts-button";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 type ExtraContentFields = {
     user: string;
@@ -43,16 +43,18 @@ export default function Page({ agentId }: { agentId: UUID }) {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const [firstResponseReceived, setFirstResponseReceived] = useState(false);
 
     const queryClient = useQueryClient();
 
     const getMessageVariant = (role: string) =>
         role !== "user" ? "received" : "sent";
 
-    const { scrollRef, isAtBottom, scrollToBottom, disableAutoScroll } = useAutoScroll({
-        smooth: true,
-    });
-   
+    const { scrollRef, isAtBottom, scrollToBottom, disableAutoScroll } =
+        useAutoScroll({
+            smooth: true,
+        });
+
     useEffect(() => {
         scrollToBottom();
     }, [queryClient.getQueryData(["messages", agentId])]);
@@ -65,89 +67,128 @@ export default function Page({ agentId }: { agentId: UUID }) {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             if (e.nativeEvent.isComposing) return;
-            handleSendMessage(e as unknown as React.FormEvent<HTMLFormElement>);
+            // handleSendMessage(e as unknown as React.FormEvent<HTMLFormElement>);
+            handleSend(e as unknown as React.FormEvent<HTMLFormElement>);
         }
     };
 
-    const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!input) return;
+    const startConversationMutation = useMutation({
+        mutationKey: ["start_conversation", agentId],
+        mutationFn: async (message: string) => {
+            return apiClient.startConversation(agentId, message);
+        },
+        onSuccess: (jobId: string) => {
+            apiClient.startSse(agentId, jobId, (content) => {
+                // Set flag for first response
+                if (!firstResponseReceived) {
+                    setFirstResponseReceived(true);
+                }
 
-        const attachments: IAttachment[] | undefined = selectedFile
-            ? [
-                  {
-                      url: URL.createObjectURL(selectedFile),
-                      contentType: selectedFile.type,
-                      title: selectedFile.name,
-                  },
-              ]
-            : undefined;
+                if (content.type === "complete") {
+                    // Ensure we remove the loading message
+                    queryClient.setQueryData<ContentWithUser[]>(
+                        ["messages", agentId],
+                        (old = []) => old.filter((msg) => !msg.isLoading)
+                    );
+                    // Force a re-render to ensure UI updates
+                    queryClient.invalidateQueries({
+                        queryKey: ["messages", agentId],
+                        exact: true,
+                    });
+                    return;
+                }
 
-        const newMessages = [
-            {
-                text: input,
-                user: "user",
-                createdAt: Date.now(),
-                attachments,
-            },
-            {
-                text: input,
-                user: "system",
-                isLoading: true,
-                createdAt: Date.now(),
-            },
-        ];
+                queryClient.setQueryData<ContentWithUser[]>(
+                    ["messages", agentId],
+                    (old = []) => {
+                        // Keep all messages except loading ones
+                        const messages = old.filter((msg) => !msg.isLoading);
 
-        queryClient.setQueryData(
-            ["messages", agentId],
-            (old: ContentWithUser[] = []) => [...old, ...newMessages]
-        );
+                        const newMessages = [
+                            ...messages,
+                            {
+                                ...content,
+                                createdAt: Date.now(),
+                                user: content.user || "system",
+                            },
+                        ];
 
-        sendMessageMutation.mutate({
-            message: input,
-            selectedFile: selectedFile ? selectedFile : null,
-        });
+                        // Only add loading message if not complete
+                        if (content.type !== "complete") {
+                            newMessages.push({
+                                text: "",
+                                user: "system",
+                                isLoading: true,
+                                createdAt: Date.now() + 1,
+                                action: "",
+                                source: "",
+                                attachments: [],
+                            });
+                        }
 
-        setSelectedFile(null);
-        setInput("");
-        formRef.current?.reset();
-    };
-
-    useEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, []);
-
-    const sendMessageMutation = useMutation({
-        mutationKey: ["send_message", agentId],
-        mutationFn: ({
-            message,
-            selectedFile,
-        }: {
-            message: string;
-            selectedFile?: File | null;
-        }) => apiClient.sendMessage(agentId, message, selectedFile),
-        onSuccess: (newMessages: ContentWithUser[]) => {
+                        return newMessages;
+                    }
+                );
+            });
+        },
+        onError: (err: any) => {
             queryClient.setQueryData(
                 ["messages", agentId],
-                (old: ContentWithUser[] = []) => [
-                    ...old.filter((msg) => !msg.isLoading),
-                    ...newMessages.map((msg) => ({
-                        ...msg,
-                        createdAt: Date.now(),
-                    })),
-                ]
+                (old: ContentWithUser[] = []) =>
+                    old.filter((msg) => !msg.isLoading)
             );
-        },
-        onError: (e) => {
             toast({
                 variant: "destructive",
                 title: "Unable to send message",
-                description: e.message,
+                description: err.message,
             });
         },
     });
+
+    useEffect(() => {
+        if (firstResponseReceived) {
+            queryClient.invalidateQueries({ queryKey: ["messages", agentId] });
+            setFirstResponseReceived(false); // Reset for next conversation
+        }
+    }, [firstResponseReceived, agentId, queryClient]);
+
+    function handleSend(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        if (!input) return;
+
+        // 1) user message + loading
+        const userMessage: ContentWithUser = {
+            text: input,
+            user: "user",
+            createdAt: Date.now(),
+            action: "", // Add missing fields
+            source: "",
+            attachments: [],
+        };
+
+        const loadingMessage: ContentWithUser = {
+            text: "",
+            user: "system",
+            isLoading: true,
+            createdAt: Date.now(),
+            action: "",
+            source: "",
+            attachments: [],
+        };
+
+        // 2) Update query
+        queryClient.setQueryData<ContentWithUser[]>(
+            ["messages", agentId],
+            (old = []) => [...old, userMessage, loadingMessage]
+        );
+
+        // 3) Fire mutation
+        startConversationMutation.mutate(input);
+
+        // 4) reset form
+        setInput("");
+        formRef.current?.reset();
+    }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -161,7 +202,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
         [];
 
     const transitions = useTransition(messages, {
-        keys: (message) =>
+        keys: (message: any) =>
             `${message.createdAt}-${message.user}-${message.text}`,
         from: { opacity: 0, transform: "translateY(50px)" },
         enter: { opacity: 1, transform: "translateY(0px)" },
@@ -173,13 +214,13 @@ export default function Page({ agentId }: { agentId: UUID }) {
     return (
         <div className="flex flex-col w-full h-[calc(100dvh)] p-4">
             <div className="flex-1 overflow-y-auto">
-                <ChatMessageList 
+                <ChatMessageList
                     scrollRef={scrollRef}
                     isAtBottom={isAtBottom}
                     scrollToBottom={scrollToBottom}
                     disableAutoScroll={disableAutoScroll}
                 >
-                    {transitions((style, message: ContentWithUser) => {
+                    {transitions((style: any, message: ContentWithUser) => {
                         const variant = getMessageVariant(message?.user);
                         return (
                             <CustomAnimatedDiv
@@ -196,8 +237,8 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                     className="flex flex-row items-center gap-2"
                                 >
                                     {message?.user !== "user" ? (
-                                        <Avatar className="size-8 p-1 border rounded-full select-none">
-                                            <AvatarImage src="/elizaos-icon.png" />
+                                        <Avatar className="size-8 rounded-full select-none">
+                                            <AvatarImage src="/nest-pfp.png" />
                                         </Avatar>
                                     ) : null}
                                     <div className="flex flex-col">
@@ -214,14 +255,18 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                             {/* Attachments */}
                                             <div>
                                                 {message?.attachments?.map(
-                                                    (attachment: IAttachment) => (
+                                                    (
+                                                        attachment: IAttachment
+                                                    ) => (
                                                         <div
                                                             className="flex flex-col gap-1 mt-2"
                                                             key={`${attachment.url}-${attachment.title}`}
                                                         >
                                                             <img
                                                                 alt="attachment"
-                                                                src={attachment.url}
+                                                                src={
+                                                                    attachment.url
+                                                                }
                                                                 width="100%"
                                                                 height="100%"
                                                                 className="w-64 rounded-md"
@@ -285,7 +330,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
             <div className="px-4 pb-4">
                 <form
                     ref={formRef}
-                    onSubmit={handleSendMessage}
+                    onSubmit={handleSend}
                     className="relative rounded-md border bg-card"
                 >
                     {selectedFile ? (
@@ -353,12 +398,14 @@ export default function Page({ agentId }: { agentId: UUID }) {
                             onChange={(newInput: string) => setInput(newInput)}
                         />
                         <Button
-                            disabled={!input || sendMessageMutation?.isPending}
+                            disabled={
+                                !input || startConversationMutation?.isPending
+                            }
                             type="submit"
                             size="sm"
                             className="ml-auto gap-1.5 h-[30px]"
                         >
-                            {sendMessageMutation?.isPending
+                            {startConversationMutation?.isPending
                                 ? "..."
                                 : "Send Message"}
                             <Send className="size-3.5" />

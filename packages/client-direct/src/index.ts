@@ -1,30 +1,29 @@
-import bodyParser from "body-parser";
-import cors from "cors";
-import express, { Request as ExpressRequest } from "express";
-import multer from "multer";
 import {
+    AgentRuntime,
+    Client,
+    composeContext,
+    Content,
     elizaLogger,
     generateCaption,
     generateImage,
-    Media,
+    generateMessageResponse,
     getEmbeddingZeroVector,
-} from "@elizaos/core";
-import { composeContext } from "@elizaos/core";
-import { generateMessageResponse } from "@elizaos/core";
-import { messageCompletionFooter } from "@elizaos/core";
-import { AgentRuntime } from "@elizaos/core";
-import {
-    Content,
-    Memory,
-    ModelClass,
-    Client,
     IAgentRuntime,
+    Media,
+    Memory,
+    messageCompletionFooter,
+    ModelClass,
+    settings,
+    stringToUuid,
 } from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
-import { settings } from "@elizaos/core";
-import { createApiRouter } from "./api.ts";
+import bodyParser from "body-parser";
+import compression from "compression";
+import cors from "cors";
+import express, { Request as ExpressRequest } from "express";
 import * as fs from "fs";
+import multer from "multer";
 import * as path from "path";
+import { createApiRouter } from "./api.ts";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -48,14 +47,6 @@ export const messageHandlerTemplate =
    # Character Profile
 {{agentName}} Details:
 {{bio}}
-{{lore}}
-
-# Core Objectives
-Primary Goals:
-{{goals}}
-
-Supporting Data:
-{{goalsData}}
 
 # Available Resources
 Knowledge Base:
@@ -65,6 +56,10 @@ Media Capabilities:
 - Can process images, videos, audio, text and PDFs
 - Recent media attachments:
 {{attachments}}
+
+Action Names:
+{{actionNames}}
+
 Available Actions:
 {{actions}}
 
@@ -108,11 +103,12 @@ Current Message to respond to:
   - Confirm factual accuracy
   - IMPORTANT: Avoid repeating previous responses verbatim
   - For time-related questions, always provide the current system time
-  - Keep responses concise and focused
+  - Keep responses concise and focused. Shorter reponses are better.
 
 5. Key requirements:
 - action: Only include if specific action is needed
 - text: Natural response maintaining character voice
+- If an action is selected, let the user know what are you doing that they they should wait for the next message
 
     ` + messageCompletionFooter;
 
@@ -123,15 +119,34 @@ export class DirectClient {
     public startAgent: Function; // Store startAgent functor
     public loadCharacterTryPath: Function; // Store loadCharacterTryPath functor
     public jsonToCharacter: Function; // Store jsonToCharacter functor
+    private jobs: Record<string, any> = {}; // Add this line
 
     constructor() {
         elizaLogger.log("DirectClient constructor");
         this.app = express();
-        this.app.use(cors());
+        this.app.use(
+            cors({
+                origin: "http://localhost:5173", // Specify exact origin
+                credentials: true,
+                methods: ["GET", "POST", "OPTIONS"],
+                allowedHeaders: ["Content-Type"],
+            })
+        );
         this.agents = new Map();
 
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
+        this.app.use(
+            compression({
+                // skip compression if we're sending text/event-stream
+                filter: (req, res) => {
+                    if (req.headers.accept?.includes("text/event-stream")) {
+                        return false;
+                    }
+                    return compression.filter(req, res);
+                },
+            })
+        );
 
         // Serve both uploads and generated images
         this.app.use(
@@ -203,6 +218,7 @@ export class DirectClient {
             }
         );
 
+        // ! Message endpoint
         this.app.post(
             "/:agentId/message",
             upload.single("file"),
@@ -296,15 +312,11 @@ export class DirectClient {
                     template: messageHandlerTemplate,
                 });
 
-                elizaLogger.log("context", context);
-
                 const response = await generateMessageResponse({
                     runtime: runtime,
                     context,
                     modelClass: ModelClass.LARGE,
                 });
-
-                elizaLogger.log("response", response);
 
                 if (!response) {
                     res.status(500).send(
@@ -360,6 +372,264 @@ export class DirectClient {
                     } else {
                         res.json([]);
                     }
+                }
+            }
+        );
+
+        // ! File upload endpoint
+        // Example of a new route that does file upload and returns a jobId
+        this.app.post(
+            "/:agentId/upload",
+            upload.single("file"),
+            async (req: express.Request, res: express.Response) => {
+                try {
+                    const agentId = req.params.agentId;
+                    const text = req.body.text || "";
+                    // ... do file-handling if (req.file)...
+
+                    // 1) Create a "job record" or store info in memory/DB
+                    const jobId = stringToUuid(Date.now().toString());
+
+                    // For illustration, store some data in a map (like: this.jobs[jobId] = {...})
+                    // so the SSE route can read or process it later.
+                    this.jobs[jobId] = {
+                        agentId,
+                        text,
+                        fileInfo: req.file, // store path, etc.
+                        status: "pending",
+                        messages: [],
+                    };
+
+                    // Return jobId so client can open SSE on "/sse/:jobId"
+                    res.json({ jobId });
+                } catch (err) {
+                    console.error(err);
+                    res.status(500).json({ error: "Failed to process upload" });
+                }
+            }
+        );
+
+        // ! SSE endpoint
+        this.app.get("/:agentId/sse/:jobId", async (req, res) => {
+            res.setHeader("Content-Type", "text/event-stream");
+            res.setHeader("Cache-Control", "no-cache");
+            res.setHeader("Connection", "keep-alive");
+
+            // Keep-alive chunk
+            res.write(":ok\n\n");
+            if (typeof res.flush === "function") {
+                res.flush();
+            }
+
+            const { jobId, agentId } = req.params;
+            const jobData = this.jobs[jobId];
+            if (!jobData) {
+                res.write(
+                    `data: ${JSON.stringify({ type: "error", msg: "No such jobId" })}\n\n`
+                );
+                res.end();
+                return;
+            }
+
+            // Helper to send SSE frames
+            function sendSSE(data: any) {
+                res.write(`data: ${JSON.stringify(data)}\n\n`);
+                if (typeof res.flush === "function") {
+                    res.flush();
+                }
+            }
+
+            try {
+                // 1) Retrieve the runtime, memory, etc. from jobData
+                const { runtime, memory } = jobData;
+                // 2) Possibly generate an immediate response from the agent
+                // For example:
+                let state = await runtime.composeState(memory, {
+                    agentName: runtime.character.name,
+                });
+
+                const context = composeContext({
+                    state,
+                    template: messageHandlerTemplate,
+                });
+
+                const response = await generateMessageResponse({
+                    runtime,
+                    context,
+                    modelClass: ModelClass.LARGE,
+                });
+
+                if (!response) {
+                    sendSSE({
+                        type: "error",
+                        msg: "No response from generateMessageResponse",
+                    });
+                    res.end();
+                    return;
+                }
+
+                // 3) Save the response as memory, if needed
+                const responseMessage: Memory = {
+                    id: stringToUuid(
+                        Date.now().toString() + "-response-" + jobId
+                    ),
+                    ...memory, // or build a new userMessage structure
+                    userId: runtime.agentId,
+                    content: response,
+                    embedding: getEmbeddingZeroVector(),
+                    createdAt: Date.now(),
+                };
+                await runtime.messageManager.createMemory(responseMessage);
+
+                // 4) Optionally send the first SSE chunk
+                sendSSE({ type: "message", content: response });
+
+                // 5) Further steps: update state, processActions, etc.
+                state = await runtime.updateRecentMessageState(state);
+
+                let followUpMessage: Content | null = null;
+                await runtime.processActions(
+                    memory,
+                    [responseMessage],
+                    state,
+                    async (newMessages) => {
+                        followUpMessage = newMessages;
+                        return [memory];
+                    }
+                );
+
+                await runtime.evaluate(memory, state);
+
+                if (followUpMessage) {
+                    sendSSE({ type: "message", content: followUpMessage });
+                }
+
+                // 6) done
+                sendSSE({ type: "complete" });
+                res.end();
+            } catch (err) {
+                console.error("Error in SSE route:", err);
+                sendSSE({
+                    type: "error",
+                    msg: err instanceof Error ? err.message : String(err),
+                });
+                res.end();
+            }
+        });
+
+        // ! Used to stream messages to the client
+        this.app.post(
+            "/:agentId/startConversation",
+            upload.single("file"),
+            async (req: express.Request, res: express.Response) => {
+                try {
+                    const agentId = req.params.agentId;
+                    const roomId = stringToUuid(
+                        req.body.roomId ?? "default-room-" + agentId
+                    );
+                    const userId = stringToUuid(req.body.userId ?? "user");
+
+                    let runtime = this.agents.get(agentId);
+                    // fallback: find by name
+                    if (!runtime) {
+                        runtime = Array.from(this.agents.values()).find(
+                            (a) =>
+                                a.character.name.toLowerCase() ===
+                                agentId.toLowerCase()
+                        );
+                    }
+
+                    if (!runtime) {
+                        res.status(404).json({ error: "Agent not found" });
+                    }
+
+                    // Ensure connection
+                    await runtime.ensureConnection(
+                        userId,
+                        roomId,
+                        req.body.userName,
+                        req.body.name,
+                        "direct"
+                    );
+
+                    // Extract text from request
+                    const text = req.body.text || "";
+                    const messageId = stringToUuid(Date.now().toString());
+
+                    // Handle file attachments
+                    const attachments: Media[] = [];
+                    if (req.file) {
+                        const filePath = path.join(
+                            process.cwd(),
+                            "agent",
+                            "data",
+                            "uploads",
+                            req.file.filename
+                        );
+                        attachments.push({
+                            id: Date.now().toString(),
+                            url: filePath,
+                            title: req.file.originalname,
+                            source: "direct",
+                            description: `Uploaded file: ${req.file.originalname}`,
+                            text: "",
+                            contentType: req.file.mimetype,
+                        });
+                    }
+
+                    const content: Content = {
+                        text,
+                        attachments,
+                        source: "direct",
+                        inReplyTo: undefined,
+                    };
+
+                    const userMessage = {
+                        content,
+                        userId,
+                        roomId,
+                        agentId: runtime.agentId,
+                    };
+
+                    // Create and save memory
+                    const memory: Memory = {
+                        id: stringToUuid(messageId + "-" + userId),
+                        ...userMessage,
+                        agentId: runtime.agentId,
+                        userId,
+                        roomId,
+                        content,
+                        createdAt: Date.now(),
+                    };
+
+                    // Save or embed memory
+                    await runtime.messageManager.addEmbeddingToMemory(memory);
+                    await runtime.messageManager.createMemory(memory);
+
+                    // Create a unique jobId to track this conversation
+                    const jobId = stringToUuid(
+                        Date.now().toString() + "-" + agentId
+                    );
+
+                    // Store all needed info in an in-memory job record
+                    this.jobs[jobId] = {
+                        agentId,
+                        runtime,
+                        userId,
+                        roomId,
+                        memory,
+                        text, // you could store other data as well
+                        status: "pending",
+                    };
+
+                    // Return the jobId so the client can open SSE at GET("/:agentId/sse/:jobId")
+                    res.json({ jobId });
+                } catch (error) {
+                    console.error("Error in startConversation:", error);
+                    res.status(500).json({
+                        error: "Failed to start conversation",
+                        details: error.message,
+                    });
                 }
             }
         );

@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useToast } from "./use-toast";
 import info from "@/lib/info.json";
 import semver from "semver";
-import { ToastAction } from "@/components/ui/toast";
-import { NavLink } from "react-router";
+// import { ToastAction } from "@/components/ui/toast";
+// import { NavLink } from "react-router";
 
 export default function useVersion() {
     const { toast } = useToast();
@@ -44,23 +44,25 @@ export default function useVersion() {
                 ) {
                     toast({
                         variant: "default",
-                        title: `New version ${latestVersion} is available.`,
-                        description: "Visit GitHub for more information.",
-                        action: (
-                            <NavLink
-                                to="https://github.com/elizaos/eliza/releases"
-                                target="_blank"
-                            >
-                                <ToastAction altText="Update">
-                                    Update
-                                </ToastAction>
-                            </NavLink>
-                        ),
+                        title: `Welcome to Nest AI!`,
+                        description: "Start chatting with Nest.",
+                        // action: (
+                        //     <NavLink
+                        //         to="https://github.com/elizaos/eliza/releases"
+                        //         target="_blank"
+                        //     >
+                        //         <ToastAction altText="Update">
+                        //             Update
+                        //         </ToastAction>
+                        //     </NavLink>
+                        // ),
                     });
                 }
             }
         } catch (e) {
-            console.error(`Unable to retrieve latest version from GitHub: ${e}`);
+            console.error(
+                `Unable to retrieve latest version from GitHub: ${e}`
+            );
         }
     };
 

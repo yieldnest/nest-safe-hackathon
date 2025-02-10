@@ -1,6 +1,6 @@
 import { PGLiteDatabaseAdapter } from "@elizaos/adapter-pglite";
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
-import { AutoClientInterface } from "@elizaos/client-auto";
+// import { AutoClientInterface } from "@elizaos/client-auto";
 import { DirectClient } from "@elizaos/client-direct";
 import {
     AgentRuntime,
@@ -22,8 +22,9 @@ import {
     validateCharacterConfig,
 } from "@elizaos/core";
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
-import { evmPlugin } from "@elizaos/plugin-evm";
+// import { evmPlugin } from "@elizaos/plugin-evm";
 import { createNodePlugin } from "@elizaos/plugin-node";
+import { vaultsFyiPlugin } from "@elizaos/plugin-vaults-fyi";
 import fs from "fs";
 import net from "net";
 import path from "path";
@@ -489,10 +490,10 @@ export async function initializeClients(
         character.clients?.map((str) => str.toLowerCase()) || [];
     elizaLogger.log("initializeClients", clientTypes, "for", character.name);
 
-    if (clientTypes.includes(Clients.AUTO)) {
-        const autoClient = await AutoClientInterface.start(runtime);
-        if (autoClient) clients.auto = autoClient;
-    }
+    // if (clientTypes.includes(Clients.AUTO)) {
+    //     const autoClient = await AutoClientInterface.start(runtime);
+    //     if (autoClient) clients.auto = autoClient;
+    // }
 
     elizaLogger.log("client keys", Object.keys(clients));
 
@@ -546,8 +547,6 @@ export async function createAgent(
 
     nodePlugin ??= createNodePlugin();
 
-    const walletSecretSalt = getSecret(character, "WALLET_SECRET_SALT");
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -558,11 +557,13 @@ export async function createAgent(
         plugins: [
             bootstrapPlugin,
             nodePlugin,
-            getSecret(character, "EVM_PUBLIC_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
-                ? evmPlugin
-                : null,
+            getSecret(character, "SANTIMENT_API_KEY") ? vaultsFyiPlugin : null,
+            ,
+            // getSecret(character, "EVM_PUBLIC_KEY") ||
+            // (getSecret(character, "WALLET_PUBLIC_KEY") &&
+            //     getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+            //     ? evmPlugin
+            //     : null,
             getSecret(character, "FAL_API_KEY") ||
                 getSecret(character, "OPENAI_API_KEY") ||
                 getSecret(character, "VENICE_API_KEY") ||
