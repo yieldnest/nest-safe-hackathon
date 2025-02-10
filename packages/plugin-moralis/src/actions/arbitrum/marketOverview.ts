@@ -115,5 +115,20 @@ export const marketOverview: Action = {
                 },
             },
         ],
+        [
+            {
+                user: "{{user1}}",
+                content: {
+                    text: "What are the best yield strategies for the Arbitrum blockchain?",
+                },
+            },
+            {
+                user: "{{agent}}",
+                content: {
+                    text: "I'll retrieve the best yield strategies for the Arbitrum blockchain.",
+                    action: "GET_ARBITRUM_MARKET_OVERVIEW",
+                },
+            },
+        ],
     ],
 }
