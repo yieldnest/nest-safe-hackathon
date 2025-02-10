@@ -3,13 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAccount } from "wagmi";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
-import { useParams } from "react-router-dom";
-import type { UUID } from "@elizaos/core";
+import { useDefaultAgent } from "@/hooks/use-default-agent";
 
 export function CreateSafeCard() {
     const { address, isConnected } = useAccount();
+    const { agent } = useDefaultAgent();
     const { toast } = useToast();
-    const { agentId } = useParams<{ agentId: UUID }>();
 
     const handleCreateSafe = async () => {
         if (!isConnected || !address) {
@@ -21,10 +20,10 @@ export function CreateSafeCard() {
             return;
         }
 
-        if (!agentId) {
+        if (!agent?.id) {
             toast({
                 title: "Error",
-                description: "Agent ID is required",
+                description: "Agent not found",
                 variant: "destructive",
             });
             return;
@@ -34,7 +33,7 @@ export function CreateSafeCard() {
             // Call the DEPLOY_NEW_SAFE_ACCOUNT action through the API
             const response = await apiClient.executeAction("DEPLOY_NEW_SAFE_ACCOUNT", {
                 ownerAddress: address,
-            }, agentId);
+            }, agent.id);
 
             if (response.success) {
                 toast({
