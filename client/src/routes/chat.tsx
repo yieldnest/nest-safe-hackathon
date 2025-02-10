@@ -1,11 +1,18 @@
-import { useParams } from "react-router";
+import { CreateSafeCard } from "@/components/create-safe-card";
 import Chat from "@/components/chat";
-import type { UUID } from "@elizaos/core";
+import { useAccount } from "wagmi";
+import { useDefaultAgent } from "@/hooks/use-default-agent";
 
-export default function AgentRoute() {
-    const { agentId } = useParams<{ agentId: UUID }>();
+export default function ChatRoute() {
+    const { isConnected } = useAccount();
+    const { agent, isLoading: isLoadingAgent } = useDefaultAgent();
 
-    if (!agentId) return <div>No data.</div>;
+    if (isLoadingAgent) return <div>Loading...</div>;
+    if (!agent) return <div>No agent found.</div>;
 
-    return <Chat agentId={agentId} />;
+    if (!isConnected) {
+        return <CreateSafeCard />;
+    }
+
+    return <Chat agentId={agent.id} />;
 }

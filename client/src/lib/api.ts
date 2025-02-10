@@ -156,6 +156,12 @@ export const apiClient = {
         const data = await response.json();
         return data.jobId;
     },
+    executeAction: (action: string, options: Record<string, any>, agentId?: string) =>
+        fetcher({
+            url: `/agents/${agentId}/action/${action}`,
+            method: "POST",
+            body: options,
+        }),
     getAgents: () => fetcher({ url: "/agents" }),
     getAgent: (agentId: string): Promise<{ id: UUID; character: Character }> =>
         fetcher({ url: `/agents/${agentId}` }),

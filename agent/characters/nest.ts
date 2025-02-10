@@ -1,12 +1,13 @@
 import { Character, Clients, ModelProviderName } from "@elizaos/core";
 import { vaultsFyiPlugin } from "@elizaos/plugin-vaults-fyi";
+import { safePlugin } from "@elizaos/plugin-safe";
 
 export const nest: Character = {
     name: "Nest",
     username: "0xNestAI",
-    plugins: [vaultsFyiPlugin],
+    plugins: [vaultsFyiPlugin, safePlugin],
     clients: [],
-    modelProvider: ModelProviderName.HEURIST,
+    modelProvider: ModelProviderName.OLLAMA,
     settings: {
         secrets: {},
         voice: {
