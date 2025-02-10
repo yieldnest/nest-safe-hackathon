@@ -79,3 +79,38 @@ export type PairsForTokenPaginated = {
   page: number;
   pairs: DexPair[];
 }; 
+
+export type SearchProtocolContent = {
+  protocolName: string;
+};
+
+export type ProtocolData = {
+  name: string;
+  id: string;
+  logo: string;
+  bio: string;
+  description: string | null;
+  website: string;
+  twitter: string;
+  type: string;
+};
+
+export type ProtocolAddress = {
+  address: string;
+  chain: string;
+  is_multi_chain: boolean;
+  primary_label: string;
+  entity: {
+    name: string | null;
+    id: string | null;
+  };
+};
+
+export type SearchQueryResult = {
+  page: number;
+  page_size: number;
+  result: {
+    entities: ProtocolData[];
+    addresses: ProtocolAddress[];
+  }
+};

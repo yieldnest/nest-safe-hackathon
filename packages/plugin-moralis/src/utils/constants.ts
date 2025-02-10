@@ -19,6 +19,8 @@ export const API_ENDPOINTS = {
         MARKET_GAINERS: `https://deep-index.moralis.io/api/v2.2/discovery/tokens/top-gainers?chain=arbitrum&min_market_cap=50000000&security_score=80&time_frame=1d`,
         PAIRS_FOR_TOKEN: (tokenAddress: string) =>
             `https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=arbitrum`,
+        SEARCH_PROTOCOL: (protocolName: string) =>
+            `https://deep-index.moralis.io/api/v2.2/entities/search?query=${protocolName}`,
     },
 } as const;
 

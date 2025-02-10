@@ -8,6 +8,10 @@ export const marketOverview: Action = {
     name: "GET_ARBITRUM_MARKET_OVERVIEW",
     similes: [
         "GET_ARBITRUM_MARKET_OVERVIEW",
+        "GET_ARBITRUM_MARKET_GAINERS",
+        "GET_ARBITRUM_MARKET_GAINERS_POOLS",
+        "GET_ARBITRUM_MARKET_TOP_GAINERS",
+        "GET_ARBITRUM_MARKET_TOP_GAINERS_POOLS",
     ],
     validate: async (runtime: IAgentRuntime, _message: Memory) => {
         await validateMoralisConfig(runtime);
@@ -59,6 +63,7 @@ export const marketOverview: Action = {
             text: "Here are the top gainers for the Arbitrum blockchain:",
             content: {
                 pairs: sortedPairs,
+                topGainers: topGainersData
             },
         });
 
@@ -76,6 +81,36 @@ export const marketOverview: Action = {
                 user: "{{agent}}",
                 content: {
                     text: "I'll retrieve the top gainers for the Arbitrum blockchain.",
+                    action: "GET_ARBITRUM_MARKET_OVERVIEW",
+                },
+            },
+        ],
+        [
+            {
+                user: "{{user1}}",
+                content: {
+                    text: "What are the top gainers pools for the Arbitrum blockchain?",
+                },
+            },
+            {
+                user: "{{agent}}",
+                content: {
+                    text: "I'll retrieve the top gainers pools for the Arbitrum blockchain.",
+                    action: "GET_ARBITRUM_MARKET_OVERVIEW",
+                },
+            },
+        ],
+        [
+            {
+                user: "{{user1}}",
+                content: {
+                    text: "What are the market top gainers pools?",
+                },
+            },
+            {
+                user: "{{agent}}",
+                content: {
+                    text: "I'll retrieve the market top gainers pools for the Arbitrum blockchain.",
                     action: "GET_ARBITRUM_MARKET_OVERVIEW",
                 },
             },
