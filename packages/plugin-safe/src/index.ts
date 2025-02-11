@@ -1,9 +1,10 @@
 import { type Plugin } from '@elizaos/core';
-import { createSafeAction } from './actions/createSafeAction';
-import { deployNewSafeAction } from './actions/deployNewSafeAction';
-import { checkSafeAction } from './actions/checkSafeAction'; 
-
-console.log("Initializing Safe Plugin...");
+import { createSafeAction } from './actions/createSafeAction.js';
+import { deployNewSafeAction } from './actions/deployNewSafeAction.js';
+import { checkSafeAction } from './actions/checkSafeAction.js'; 
+import { prepareTransactionAction } from './actions/prepareTransactionAction.js';
+import { getPendingTransactionsAction } from './actions/getPendingTransactionsAction.js';
+import { executeTransactionAction } from './actions/executeTransactionAction.js';
 
 export const safePlugin: Plugin = {
   name: 'Safe Protocol Integration',
@@ -11,7 +12,13 @@ export const safePlugin: Plugin = {
   providers: [],
   evaluators: [],
   services: [],
-  actions: [deployNewSafeAction, checkSafeAction]
+  actions: [
+    deployNewSafeAction, 
+    checkSafeAction, 
+    prepareTransactionAction,
+    getPendingTransactionsAction,
+    executeTransactionAction
+  ]
 };
 
 export const pluginSafe = safePlugin;
