@@ -155,7 +155,7 @@ Nest balance: ${formattedBalance} ETH`;
                     txHash,
                     receipt,
                     safeOwners,
-                    safeThreshold,
+                    safeThreshold: safeThreshold.toString(),
                     balance: formattedBalance,
                 },
             });
