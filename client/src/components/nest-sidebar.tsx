@@ -13,65 +13,21 @@ import { NavLink } from "react-router";
 import { Wallet, Users, Copy } from "lucide-react";
 import { ConnectButton } from "./ConnectButton";
 import { useAccount } from "wagmi";
-import { useEffect, useState } from "react";
-import { useDefaultAgent } from "@/hooks/use-default-agent";
-import { apiClient } from "@/lib/api";
+import { useSafeDetails } from "@/hooks/use-safe-details";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-interface SafeDetails {
-    address: string;
-    owners: string[];
-    threshold: number;
-}
-
 export function NestSidebar() {
-    const { address, isConnected } = useAccount();
-    const { agent } = useDefaultAgent();
-    const [safeDetails, setSafeDetails] = useState<SafeDetails | undefined>();
+    const safeDetails = useSafeDetails();
+    const { address } = useAccount();
     const { toast } = useToast();
 
     const truncateAddress = (addr: string) => {
         if (!addr) return "";
         return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
     };
-
-    useEffect(() => {
-        const checkExistingSafe = async () => {
-            if (!agent?.id || !isConnected || !address) {
-                setSafeDetails(undefined);
-                return;
-            }
-
-            try {
-                const response = await apiClient.executeAction("CHECK_SAFE_ACCOUNT", {
-                    ownerAddress: address
-                }, agent.id);
-                
-                if (response.content?.content?.isSafeDeployed) {
-                    setSafeDetails({
-                        address: response.content.content.safeAddress,
-                        owners: response.content.content.safeOwners,
-                        threshold: response.content.content.safeThreshold
-                    });
-                } else {
-                    setSafeDetails(undefined);
-                }
-            } catch (error) {
-                console.error("Error checking Safe:", error);
-                toast({
-                    title: "Error",
-                    description: "Failed to check Safe status",
-                    variant: "destructive",
-                });
-                setSafeDetails(undefined);
-            }
-        };
-
-        checkExistingSafe();
-    }, [agent?.id, address, isConnected]);
 
     return (
         <Sidebar 
