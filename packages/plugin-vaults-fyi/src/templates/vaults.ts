@@ -108,90 +108,30 @@ export const singleVaultAnalysisTemplate = `As a DeFi yield analyst, provide a d
 
 {{vaultData}}
 
-Historical APY Data:
-{{historicalApyData}}
-
 Please analyze the following aspects:
 
-1. APY Analysis
-- Current APY breakdown (base, rewards, total)
-- Historical APY trends and stability
-- APY volatility assessment
-- Comparison of base vs total APY
-- Identify any concerning patterns or positive trends
-
-2. Risk Assessment
+1. Risk Assessment
 - TVL analysis and liquidity depth
+- APY analysis
 - Protocol security score evaluation
 - Network reliability
 - Asset fundamentals
 - Historical stability metrics
 
-3. Performance Metrics
+2. Performance Metrics
 - Vault score analysis (out of 100)
 - Holder count and growth
 - TVL trends
 - Protocol reputation
 
-Provide the analysis in the following JSON format:
-
-\`\`\`json
-{
-    "vaultAnalysis": {
-        "basicInfo": {
-            "name": string,
-            "protocol": string,
-            "network": string,
-            "asset": string,
-            "tvlUsd": string
-        },
-        "apyAnalysis": {
-            "current": {
-                "baseApy": number,
-                "rewardsApy": number | null,
-                "totalApy": number
-            },
-            "historical": {
-                "averageBaseApy": number,
-                "averageTotalApy": number,
-                "volatility": "low" | "medium" | "high",
-                "trend": "increasing" | "stable" | "decreasing",
-                "maxApy": number,
-                "minApy": number,
-                "lastMonthTrend": string
-            }
-        },
-        "riskAssessment": {
-            "overallRisk": "low" | "medium" | "high",
-            "securityScore": number,
-            "liquidityScore": number,
-            "stabilityScore": number,
-            "riskFactors": string[],
-            "securityFeatures": string[]
-        },
-        "investmentSuitability": {
-            "recommendedAction": "deposit" | "research" | "wait" | "avoid",
-            "timeHorizon": "short" | "medium" | "long",
-            "investorProfile": "conservative" | "moderate" | "aggressive",
-            "minimumInvestmentUsd": number,
-            "suitableFor": string[]
-        }
-    },
-    "marketContext": {
-        "protocolTvlRank": string,
-        "competitiveAdvantages": string[],
-        "disadvantages": string[],
-        "uniqueFeatures": string[]
-    },
-    "recommendations": {
-        "action": string,
-        "reasoning": string[],
-        "optimalEntryStrategy": string,
-        "suggestedAllocation": string,
-        "watchoutPoints": string[]
-    }
-}
-\`\`\`
+In addition to the analysis provide the following information in the exact format below:
+- vaultAddress: 
+- network
+- vaultName
+- protocol
+- tokenSymbol
+- tokenAddress
+- tokenDecimals
 
 Analysis Guidelines:
 1. Focus on APY stability and trends from historical data
@@ -209,71 +149,55 @@ Automatic Red Flags:
 
 Note: This analysis is for informational purposes only and should not be considered as financial advice. Always conduct your own research and consider your risk tolerance before investing.`;
 
-export const singleVaultTextAnalysisTemplate = `As a DeFi yield analyst, provide a clear and detailed text analysis of the following vault, including its historical APY performance:
+export const optimizedVaultAnalysisTemplate = (): string => {
+    return `
+You are {{agentName}}, a DeFi yield analyst. Provide a concise but thorough analysis of the vault data below, returning essential metrics and a clear risk-reward assessment.
 
+---
+Vault Data:
 {{vaultData}}
+---
 
-Historical APY Data:
-{{historicalApyData}}
+**1. Key Vault Information**
+(Include these exactly)
+- vaultAddress:
+- network:
+- vaultName:
+- protocol:
+- tokenSymbol:
+- tokenAddress:
+- tokenDecimals:
+- strategyType:
+- underlyingAssets:
 
-Please provide a comprehensive analysis in the following structure:
+**2. Performance & Risk Analysis**
+- **Capital Metrics**: TVL & trend, liquidity depth, holder concentration, utilization rate
+- **Return Metrics**: Current APY/APR (divide raw number by 100), historical stability, risk-adjusted returns (Sharpe if available), fee impact
+- **Risk Metrics**: Security score (1-100), audit status, network reliability, historical stability
 
-1. Executive Summary
-- Brief overview of the vault and its purpose
-- Current key metrics (TVL, APY, Score)
-- Overall recommendation
+**3. Red Flags**
+(List explicitly if any apply)
+- TVL < $1,500,000
+- APY volatility > 45% (30 days)
+- Security score < 75
+- Negative APY trend > 15%
+- Liquidity ratio < 20%
+- Top 5 holders > 50%
+- Unaudited contracts
+- High complexity (>3 protocols)
 
-2. APY Performance Analysis
-- Current APY breakdown and comparison with market
-- Historical APY trends and stability analysis
-- Notable patterns or changes in yield generation
-- Reward token analysis (if applicable)
+**4. Risk-Reward Summary**
+- **Opportunity Score** (0-100) based on: returns, risk, capital efficiency, protocol maturity
+- **Strategy Classification**: (Conservative / Moderate / Aggressive)
+- **Recommended Time Horizon**: (Short / Medium / Long)
+- Key monitoring metrics & risk mitigation suggestions
 
-3. Risk and Security Assessment
-- Protocol security analysis (based on scores)
-- Liquidity analysis and TVL stability
-- Network security considerations
-- Smart contract risk assessment
-- Asset quality evaluation
+**Analysis Guidelines**:
+1. Emphasize data-driven insights (TVL–APY correlation, historical trends)
+2. Consider current market conditions and protocol reputation
+3. Use correct numeric abbreviations (k, M, B, T)
+4. Offer a final risk vs. reward perspective
 
-4. Investment Considerations
-- Minimum recommended investment
-- Suggested investment timeframe
-- Risk-adjusted return analysis
-- Gas costs and fee considerations
-- Entry/exit strategy recommendations
-
-5. Competitive Analysis
-- Position within the protocol ecosystem
-- Comparison with similar vaults
-- Unique advantages or disadvantages
-- Market share and growth potential
-
-6. Red Flags and Watch Points
-- Any concerning metrics or trends
-- Risk factors to monitor
-- Potential vulnerabilities
-- Market-dependent risks
-
-7. Recommendations
-- Clear action recommendation (deposit/wait/avoid)
-- Specific entry strategy if recommended
-- Position sizing suggestions
-- Risk management recommendations
-- Monitoring points for existing investors
-
-Please ensure the analysis:
-- Uses clear, non-technical language where possible
-- Provides specific numbers and comparisons
-- Highlights both opportunities and risks
-- Gives actionable insights
-- Explains the reasoning behind recommendations
-
-Automatic Disqualifiers to Highlight:
-- TVL below $1,000,000
-- Vault score below 70
-- Extreme APY volatility (>50% monthly change)
-- Significant negative APY trend
-- Low liquidity ratio (<20%)
-
-Note: This analysis is for informational purposes only and should not be considered as financial advice. Always conduct your own research and consider your risk tolerance before investing.`;
+DISCLAIMER: This analysis is informational only and not financial advice. Always conduct independent research and consider risk tolerance before investing.
+  `;
+};
