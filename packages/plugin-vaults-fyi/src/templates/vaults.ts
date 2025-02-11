@@ -236,5 +236,5 @@ Before listing the strategies, share your thought process in a conversational wa
 
 After presenting the options, close with a brief question about whether these options align with what they're looking for or if they'd like to explore different criteria.
 Remeber, this is research you are doing for the user, so be sure to include all the information they need to make a decision, and that the math is correct if you did any math.
-Important: Double check that all addresses and links are copied in full, exactly as they appear in the data. Format large numbers with abbreviations (k, M, B, T).
+Important: Double check that all addresses, links, and symbols are copied in full, exactly as they appear in the data source. Format large numbers with abbreviations (k, M, B, T).
 `;
