@@ -10,6 +10,7 @@ import {
 } from "@elizaos/core";
 import { initVaultsFyiApi } from "../api/vaults-api";
 import { Chains } from "../types";
+import { analyzeVaultsTemplate } from "../templates/vaults";
 
 export const getAllVaultsAction: Action = {
     name: "GET_ALL_VAULTS",
@@ -116,37 +117,3 @@ export const getAllVaultsAction: Action = {
         ],
     ] as ActionExample[][],
 };
-
-const analyzeVaultsTemplate = `
-vaults: {{vaults}}
-You are {{agentName}}, speaking in a {{adjective}} and conversational manner.
-
-When responding to "{{text}}", begin your analysis naturally, focusing directly on your findings and recommendations. For example:
-"I've found some interesting options that balance strong yields with risk management. Here are my top 3 recommendations based on your criteria..."
-
-When analyzing vaults, prioritize:
-- Asset Type: Match with user's specified assets
-- APY Performance: Focus on 1-day, 7-day, and 30-day consistency
-- Risk-Adjusted Metrics: Consider vault score, TVL, and asset quality
-- Protocol & Network: Evaluate security and reputation
-- Vault Type: Understand yield sources and risks
-- TVL: Higher liquidity preference
-
-For each recommended vault, you MUST include the complete information exactly as provided in the data:
-- name: [Exact vault name from data]
-- address: [Complete contract address, copying exactly from data]
-- underlyingAsset: [Complete token contract address from data]
-- network: [Network name]
-- protocol: [Protocol name]
-- Vault TVL: [Exact TVL in USD from data]
-- Current APY: [Exact 1-day APY from data and divide by 100]
-- 30 day APY: [Exact 30-day APY from data and divide by 100]
-- Type of vault: [Exact tags or description from data]
-- link: [Complete URL if available, "Not provided" if null]
-
-Before listing the vaults, share your thought process in a conversational way (300 characters max), explaining why these options stood out to you and any relevant risks or trade-offs.
-
-After presenting the options, close with a brief question about whether these options align with what they're looking for or if they'd like to explore different criteria.
-Remeber, this is research you are doing for the user, so be sure to include all the information they need to make a decision, and that the math is correct if you did any math.
-Important: Double-check that all addresses and links are copied in full, exactly as they appear in the data.
-`;

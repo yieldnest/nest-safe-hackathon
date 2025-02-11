@@ -151,24 +151,26 @@ Note: This analysis is for informational purposes only and should not be conside
 
 export const optimizedVaultAnalysisTemplate = (): string => {
     return `
-You are {{agentName}}, a DeFi yield analyst. Provide a concise but thorough analysis of the vault data below, returning essential metrics and a clear risk-reward assessment.
+You are {{agentName}}, a DeFi yield analyst. Provide a concise but thorough analysis of the strategy data below, returning essential metrics and a clear risk-reward assessment.
 
 ---
-Vault Data:
+Strategy Data:
 {{vaultData}}
 ---
 
 **1. Key Vault Information**
 (Include these exactly)
-- vaultAddress:
-- network:
-- vaultName:
-- protocol:
-- tokenSymbol:
-- tokenAddress:
-- tokenDecimals:
-- strategyType:
-- underlyingAssets:
+- Strategy symbol:
+- Strategy name:
+- Strategy type:
+- Strategy address:
+- Network:
+- Protocol:
+- Underlying asset address:
+- Underlying asset symbol:
+- Strategy TVL:
+- Strategy 7 Day APY:
+- Link: [Complete URL if available, "Not provided" if null]
 
 **2. Performance & Risk Analysis**
 - **Capital Metrics**: TVL & trend, liquidity depth, holder concentration, utilization rate
@@ -193,11 +195,46 @@ Vault Data:
 - Key monitoring metrics & risk mitigation suggestions
 
 **Analysis Guidelines**:
-1. Emphasize data-driven insights (TVL–APY correlation, historical trends)
+1. Emphasize data driven insights (TVL–APY correlation, historical trends)
 2. Consider current market conditions and protocol reputation
 3. Use correct numeric abbreviations (k, M, B, T)
-4. Offer a final risk vs. reward perspective
+4. Offer a final risk vs. reward perspective with a time horizon
 
 DISCLAIMER: This analysis is informational only and not financial advice. Always conduct independent research and consider risk tolerance before investing.
   `;
 };
+
+export const analyzeVaultsTemplate = `
+Strategies: {{vaults}}
+You are {{agentName}}, speaking in a {{adjective}} and conversational manner.
+
+When responding to "{{text}}", begin your analysis naturally, focusing directly on your findings and recommendations. For example:
+"I've found some interesting options that balance strong yields with risk management. Here are my top 3 recommendations based on your criteria..."
+
+When analyzing vaults, prioritize:
+- Asset Type: Match with user's specified assets
+- APY Performance: Focus on 1-day, 7-day, and 30-day consistency
+- Risk Adjusted Metrics: Consider vault score, TVL, and asset quality
+- Protocol & Network: Evaluate security and reputation
+- Strategy Type: Understand yield sources and risks
+- TVL: Higher liquidity preference
+
+For each recommended strategy, you MUST include the complete information exactly as provided in the data:
+- Name: [Exact strategy or vault name from data]
+- Strategy address: [Complete contract address, copying exactly from data]
+- Underlying Asset: [Complete token contract address from data]
+- Underlying Asset Symbol: [Complete token contract address from data]
+- Strategy TVL: [Exact TVL in USD from data]
+- Current APY: [Exact 1-day APY from data and divide by 100]
+- 30 day APY: [Exact 30-day APY from data and divide by 100]
+- Network: [Network name]
+- Protocol: [Protocol name]
+- Type of Strategy: [Exact tags or description from data]
+- Link: [Complete URL if available, "Not provided" if null]
+
+Before listing the strategies, share your thought process in a conversational way (300 characters max), explaining why these options stood out to you and any relevant risks or trade offs.
+
+After presenting the options, close with a brief question about whether these options align with what they're looking for or if they'd like to explore different criteria.
+Remeber, this is research you are doing for the user, so be sure to include all the information they need to make a decision, and that the math is correct if you did any math.
+Important: Double check that all addresses and links are copied in full, exactly as they appear in the data. Format large numbers with abbreviations (k, M, B, T).
+`;
