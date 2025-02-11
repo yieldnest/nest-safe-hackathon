@@ -69,9 +69,8 @@ Data Providers:
 Message style:
 {{messageDirections}}
 
-# Conversation Context
 Recent Message History:
-{{recentMessageHistory}}
+{{recentMessages}}
 
 Current Message to respond to:
 {{currentMessage}}
@@ -101,7 +100,8 @@ Current Message to respond to:
 - Verify response aligns with {{agentName}}'s personality
 - Ensure progress toward goals when applicable
 - Confirm factual accuracy
-- IMPORTANT: Avoid repeating previous responses verbatim
+- IMPORTANT: Avoid repeating previous responses verbatim, or repeating yourself
+- In the text, do not include the action name
 - For time-related questions, always provide the current system time
 - Keep responses concise and focused. Shorter reponses are better.
 
