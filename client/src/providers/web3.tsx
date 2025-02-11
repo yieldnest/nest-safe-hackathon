@@ -1,12 +1,12 @@
-import '@rainbow-me/rainbowkit/styles.css';
 import {
     connectorsForWallets,
     getDefaultWallets,
     RainbowKitProvider,
-} from '@rainbow-me/rainbowkit';
-import { configureChains, createConfig, WagmiConfig } from 'wagmi';
-import { sepolia } from 'wagmi/chains';
-import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+} from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
+import { sepolia } from "viem/chains";
+import { configureChains, createConfig, WagmiConfig } from "wagmi";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
 // Configure chains & providers
 const { chains, publicClient } = configureChains(
@@ -14,7 +14,7 @@ const { chains, publicClient } = configureChains(
     [
         jsonRpcProvider({
             rpc: () => ({
-                http: 'https://rpc.sepolia.org',
+                http: import.meta.env.VITE_RPC_URL,
             }),
         }),
     ]
@@ -24,18 +24,18 @@ const { chains, publicClient } = configureChains(
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
 if (!projectId) {
-    throw new Error('WalletConnect Project ID is required. Please add VITE_WALLETCONNECT_PROJECT_ID to your .env file');
+    throw new Error(
+        "WalletConnect Project ID is required. Please add VITE_WALLETCONNECT_PROJECT_ID to your .env file"
+    );
 }
 
 const { wallets } = getDefaultWallets({
-    appName: 'Nest Safe',
+    appName: "Nest Safe",
     projectId,
     chains,
 });
 
-const connectors = connectorsForWallets([
-    ...wallets,
-]);
+const connectors = connectorsForWallets([...wallets]);
 
 // Create wagmi config
 const config = createConfig({
@@ -48,9 +48,7 @@ const config = createConfig({
 export function Web3Provider({ children }: { children: React.ReactNode }) {
     return (
         <WagmiConfig config={config}>
-            <RainbowKitProvider chains={chains}>
-                {children}
-            </RainbowKitProvider>
+            <RainbowKitProvider chains={chains}>{children}</RainbowKitProvider>
         </WagmiConfig>
     );
-} 
+}
