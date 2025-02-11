@@ -19,12 +19,6 @@ import { createPublicClient, createWalletClient, http, formatUnits } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { waitForTransactionReceipt } from 'viem/actions';
 
-interface ExtendedSafeDeploymentConfig extends SafeDeploymentConfig {
-    deploymentType?: 'canonical';
-}
-
-const RPC_URL = 'https://rpc.ankr.com/eth_sepolia';
-
 export const deployNewSafeAction: Action = {
     name: "DEPLOY_NEW_SAFE_ACCOUNT",
     description: "Deploys a new Safe smart account with both the user and Nest as owners, requiring both signatures for transactions.",
@@ -48,8 +42,9 @@ export const deployNewSafeAction: Action = {
         try {
             // Get Nest's private key from environment
             const nestPrivateKey = runtime.getSetting("EVM_PRIVATE_KEY");
-            if (!nestPrivateKey) {
-                throw new Error("Missing EVM_PRIVATE_KEY for Nest");
+            const rpcUrl = runtime.getSetting("EVM_PROVIDER_URL");
+            if (!nestPrivateKey || !rpcUrl) {
+                throw new Error("Missing EVM_PRIVATE_KEY or EVM_PROVIDER_URL for Nest");
             }
 
             // Get user's wallet address from options
@@ -68,7 +63,7 @@ export const deployNewSafeAction: Action = {
             // Create a public client to fetch and log the account balance
             const publicClient = createPublicClient({
                 chain: sepolia,
-                transport: http(RPC_URL),
+                transport: http(rpcUrl),
             });
 
             const balance = await publicClient.getBalance({ 
@@ -84,17 +79,9 @@ export const deployNewSafeAction: Action = {
                 threshold: 2,
             };
 
-            // Configure deployment parameters
-            // const safeDeploymentConfig: ExtendedSafeDeploymentConfig = {
-            //     saltNonce: Date.now().toString(), // Use timestamp for unique deployment
-            //     safeVersion: '1.4.1',
-            //     deploymentType: 'canonical',
-            // };
-
             // Build the predicted safe configuration
             const predictedSafe: PredictedSafeProps = {
                 safeAccountConfig,
-                // safeDeploymentConfig,
             };
 
             console.log("Deploying Safe with config:", {
@@ -104,7 +91,7 @@ export const deployNewSafeAction: Action = {
 
             // Initialize the Protocol Kit
             const protocolKit = await (Safe as any).init({
-              provider: RPC_URL,
+              provider: rpcUrl,
                 signer: formattedPrivateKey,
                 predictedSafe,
                 isL1SafeSingleton: true,
@@ -129,7 +116,6 @@ export const deployNewSafeAction: Action = {
                 hash: txHash as `0x${string}`
             });
 
-            
             // Get the Safe address
             const safeAddress = await protocolKit.getAddress();
             console.log("Safe Deployed: ", safeAddress);
