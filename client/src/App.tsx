@@ -4,10 +4,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import ChatRoute from "./routes/chat";
-import Overview from "./routes/overview";
-import Home from "./routes/home";
+import { BrowserRouter } from "react-router-dom";
+import Routes from './routes/index';
 import { Web3Provider } from "./providers/web3";
 import { NestSidebar } from "./components/nest-sidebar";
 
@@ -22,7 +20,7 @@ const queryClient = new QueryClient({
 function App() {
     return (
         <Web3Provider>
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen">
                 <main className="py-6">
                     <QueryClientProvider client={queryClient}>
                         <div
@@ -37,11 +35,7 @@ function App() {
                                         <AppSidebar />
                                         <SidebarInset>
                                             <div className="flex flex-1 flex-col gap-4 size-full container">
-                                                <Routes>
-                                                    <Route path="/" element={<Home />} />
-                                                    <Route path="/chat" element={<ChatRoute />} />
-                                                    <Route path="/settings" element={<Overview />} />
-                                                </Routes>
+                                                <Routes />
                                             </div>
                                         </SidebarInset>
                                         <NestSidebar />

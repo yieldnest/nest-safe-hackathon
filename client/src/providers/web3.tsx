@@ -14,7 +14,7 @@ const { chains, publicClient } = configureChains(
     [
         jsonRpcProvider({
             rpc: () => ({
-                http: import.meta.env.VITE_RPC_URL,
+                http: sepolia.rpcUrls.default.http[0],
             }),
         }),
     ]
