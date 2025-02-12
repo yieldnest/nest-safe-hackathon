@@ -60,7 +60,7 @@ export function AppSidebar() {
             </SidebarContent>
             <SidebarFooter>
                 <SidebarMenu>
-                    <SidebarMenuItem>
+                    {/* <SidebarMenuItem>
                         <NavLink
                             to="https://elizaos.github.io/eliza/docs/intro/"
                             target="_blank"
@@ -74,7 +74,7 @@ export function AppSidebar() {
                         <SidebarMenuButton disabled>
                             <Cog /> Settings
                         </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    </SidebarMenuItem> */}
                     <ConnectionStatus />
                 </SidebarMenu>
             </SidebarFooter>
