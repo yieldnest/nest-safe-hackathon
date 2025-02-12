@@ -168,6 +168,7 @@ const Sidebar = React.forwardRef<
         side?: "left" | "right";
         variant?: "sidebar" | "floating" | "inset";
         collapsible?: "offcanvas" | "icon" | "none";
+        width?: string;
     }
 >(
     (
@@ -175,6 +176,7 @@ const Sidebar = React.forwardRef<
             side = "left",
             variant = "sidebar",
             collapsible = "offcanvas",
+            width = SIDEBAR_WIDTH,
             className,
             children,
             ...props
@@ -190,6 +192,7 @@ const Sidebar = React.forwardRef<
                         "flex h-full w-[--sidebar-width] flex-col bg-card text-sidebar-foreground",
                         className
                     )}
+                    style={{ "--sidebar-width": width } as React.CSSProperties}
                     ref={ref}
                     {...props}
                 >
@@ -209,11 +212,7 @@ const Sidebar = React.forwardRef<
                         data-sidebar="sidebar"
                         data-mobile="true"
                         className="w-[--sidebar-width] bg-card p-0 text-sidebar-foreground [&>button]:hidden"
-                        style={
-                            {
-                                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-                            } as React.CSSProperties
-                        }
+                        style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
                         side={side}
                     >
                         <div className="flex h-full w-full flex-col">
@@ -232,6 +231,7 @@ const Sidebar = React.forwardRef<
                 data-collapsible={state === "collapsed" ? collapsible : ""}
                 data-variant={variant}
                 data-side={side}
+                style={{ "--sidebar-width": width } as React.CSSProperties}
             >
                 {/* This is what handles the sidebar gap on desktop */}
                 <div

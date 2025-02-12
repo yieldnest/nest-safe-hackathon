@@ -1,18 +1,29 @@
 import { Action, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { initVaultsFyiApi } from "../api/vaults-api";
+import { Chains } from "../types";
 
 export const generateVaultTxAction: Action = {
     name: "GENERATE_VAULT_TX",
-    description: "Generate a deposit transaction for a vault",  
+    description: "Generate a deposit transaction for a vault",
     handler: async (
-        runtime: IAgentRuntime, 
-        _message: Memory, 
-        _state: State, 
-        options: { vaultAddress: string, senderAddress: string, amount: string }, 
+        runtime: IAgentRuntime,
+        _message: Memory,
+        _state: State,
+        options: {
+            vaultAddress: string;
+            senderAddress: string;
+            amount: string;
+            network: Chains;
+        },
         callback
     ) => {
         const vaultsFyiApi = initVaultsFyiApi(runtime);
-        const vaultDepositTx = await vaultsFyiApi.getVaultDepositTx(options.vaultAddress, options.senderAddress, options.amount);
+        const vaultDepositTx = await vaultsFyiApi.getVaultDepositTx(
+            options.vaultAddress,
+            options.senderAddress,
+            options.amount,
+            options.network
+        );
 
         if (!vaultDepositTx) {
             callback({
@@ -31,4 +42,4 @@ export const generateVaultTxAction: Action = {
         const vaultsFyiApiKey = runtime.getSetting("VAULTS_FYI_API_KEY");
         return typeof vaultsFyiApiKey === "string";
     },
-}
+};

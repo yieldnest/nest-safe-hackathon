@@ -11,11 +11,16 @@ import {
     getEnvVariable,
     type UUID,
     validateCharacterConfig,
+    Memory,
+    State,
+    Content,
+    Actor,
 } from "@elizaos/core";
 
 import { validateUuid } from "@elizaos/core";
 import { REST, Routes } from "discord.js";
 import type { DirectClient } from ".";
+import { v4 as uuidv4 } from "uuid";
 
 interface UUIDParams {
     agentId: UUID;
@@ -135,6 +140,68 @@ export function createApiRouter(
             res.status(204).json({ success: true });
         } else {
             res.status(404).json({ error: "Agent not found" });
+        }
+    });
+
+    router.post("/agents/:agentId/action/:actionName", async (req, res) => {
+        const { agentId, actionName } = req.params;
+        const options = req.body;
+                
+        const agent = agents.get(agentId);
+        if (!agent) {
+            console.error("[API] Agent not found:", agentId);
+            res.status(404).json({ error: "Agent not found" });
+            return;
+        }
+
+        try {
+            const actionMessage: Memory = {
+                id: uuidv4() as UUID,
+                roomId: uuidv4() as UUID,
+                userId: uuidv4() as UUID,
+                agentId: agentId as UUID,
+                content: { text: "", action: actionName }
+            };
+
+            const state: State = {
+                bio: "",
+                lore: "",
+                messageDirections: "",
+                postDirections: "",
+                replyDirections: "",
+                retweetDirections: "",
+                quoteDirections: "",
+                likeDirections: "",
+                roomId: uuidv4() as UUID,
+                actors: JSON.stringify([]),
+                recentMessages: JSON.stringify([actionMessage]),
+                recentMessagesData: [actionMessage]
+            };
+
+            let responseContent: Content | null = null;
+
+            await agent.processAction(
+                actionName,
+                actionMessage,
+                state,
+                async (content: Content) => {
+                    responseContent = content;
+                    const response: Memory = { ...actionMessage, content };
+                    return Promise.resolve([response]);
+                },
+                options
+            );
+
+            res.json({ 
+                success: true, 
+                content: responseContent 
+            });
+        } catch (error) {
+            console.error("[API] Action execution failed:", error);
+            res.status(500).json({ 
+                error: "Failed to execute action",
+                message: error.message 
+            });
         }
     });
 

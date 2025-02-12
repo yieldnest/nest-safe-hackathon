@@ -1394,13 +1394,6 @@ Text: ${attachment.text}
                 recentMessages && recentMessages.length > 0
                     ? addHeader("# Conversation Messages", recentMessages)
                     : "",
-            recentMessageHistoy:
-                recentMessages && recentMessages.length > 0
-                    ? addHeader(
-                          "# Conversation Messages",
-                          recentMessages.split("\n").slice(-11, -1).join("\n")
-                      )
-                    : "",
             currentMessage:
                 recentMessages && recentMessages.length > 0
                     ? addHeader(

@@ -27,6 +27,8 @@
         "@elizaos/plugin-evm": "workspace:*",
         "@elizaos/plugin-node": "workspace:*",
         "@elizaos/plugin-vaults-fyi": "workspace:*",
+        "@elizaos/plugin-safe": "workspace:*",
+        "@elizaos/plugin-enso": "workspace:*",
         "readline": "1.3.0",
         "ws": "8.18.0",
         "yargs": "17.7.2"

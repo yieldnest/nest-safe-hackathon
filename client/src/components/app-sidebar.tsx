@@ -1,54 +1,40 @@
-import { useQuery } from "@tanstack/react-query";
-import info from "@/lib/info.json";
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
-import { apiClient } from "@/lib/api";
 import { NavLink, useLocation } from "react-router";
-import type { UUID } from "@elizaos/core";
-import { Book, Cog, User } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import ConnectionStatus from "./connection-status";
 
 export function AppSidebar() {
     const location = useLocation();
-    const query = useQuery({
-        queryKey: ["agents"],
-        queryFn: () => apiClient.getAgents(),
-        refetchInterval: 5_000,
-    });
-
-    const agents = query?.data?.agents;
 
     return (
         <Sidebar>
-            <SidebarHeader>
+            <SidebarHeader className="mb-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <NavLink to="/">
                                 <img
-                                    alt="elizaos-icon"
-                                    src="/elizaos-icon.png"
+                                    alt="nest-pfp"
+                                    src="/nest-pfp.png"
                                     width="100%"
                                     height="100%"
-                                    className="size-7"
+                                    className="size-10 mr-1"
                                 />
-
                                 <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="font-semibold">
-                                        ElizaOS
+                                    <span className="font-semibold text-lg">
+                                        Nest AI
                                     </span>
-                                    <span className="">v{info?.version}</span>
+                                    {/* <span className="">v{info?.version}</span> */}
                                 </div>
                             </NavLink>
                         </SidebarMenuButton>
@@ -57,50 +43,23 @@ export function AppSidebar() {
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Agents</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {query?.isPending ? (
-                                <div>
-                                    {Array.from({ length: 5 }).map(
-                                        (_, _index) => (
-                                            <SidebarMenuItem key={"skeleton-item"}>
-                                                <SidebarMenuSkeleton />
-                                            </SidebarMenuItem>
-                                        )
-                                    )}
-                                </div>
-                            ) : (
-                                <div>
-                                    {agents?.map(
-                                        (agent: { id: UUID; name: string }) => (
-                                            <SidebarMenuItem key={agent.id}>
-                                                <NavLink
-                                                    to={`/chat/${agent.id}`}
-                                                >
-                                                    <SidebarMenuButton
-                                                        isActive={location.pathname.includes(
-                                                            agent.id
-                                                        )}
-                                                    >
-                                                        <User />
-                                                        <span>
-                                                            {agent.name}
-                                                        </span>
+                            <SidebarMenuItem>
+                                <NavLink to="/chat">
+                                    <SidebarMenuButton isActive={location.pathname.includes('/chat')}>
+                                        <MessageSquare />
+                                        <span>Chat</span>
                                                     </SidebarMenuButton>
                                                 </NavLink>
                                             </SidebarMenuItem>
-                                        )
-                                    )}
-                                </div>
-                            )}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
             <SidebarFooter>
                 <SidebarMenu>
-                    <SidebarMenuItem>
+                    {/* <SidebarMenuItem>
                         <NavLink
                             to="https://elizaos.github.io/eliza/docs/intro/"
                             target="_blank"
@@ -114,7 +73,7 @@ export function AppSidebar() {
                         <SidebarMenuButton disabled>
                             <Cog /> Settings
                         </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    </SidebarMenuItem> */}
                     <ConnectionStatus />
                 </SidebarMenu>
             </SidebarFooter>

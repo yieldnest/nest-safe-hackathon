@@ -113,8 +113,12 @@ class VaultsFyiApi {
         return userVaults;
     }
 
-    public async getVault(vaultAddress: string): Promise<VaultDetailed | null> {
-        const allVaults = await this.getAllVaults();
+    public async getVault(
+        vaultAddress: string,
+        network: Chains
+    ): Promise<VaultDetailed | null> {
+        const allVaults = await this.getAllVaults(network);
+        elizaLogger.info("allVaults", allVaults);
         return (
             allVaults.find((vault) => vault.address === vaultAddress) || null
         );
@@ -123,9 +127,10 @@ class VaultsFyiApi {
     public async getVaultDepositTx(
         vaultAddress: string,
         senderAddress: string,
-        amount: string
+        amount: string,
+        network: Chains
     ): Promise<VaultDepositTx | null> {
-        const vault = await this.getVault(vaultAddress);
+        const vault = await this.getVault(vaultAddress, network);
         if (!vault || !vault.isTransactional) {
             return null;
         }
@@ -141,6 +146,42 @@ class VaultsFyiApi {
             }
         );
         return data;
+    }
+
+    public async getHistoricalData({
+        vaultAddress,
+        network = "arbitrum",
+        interval = "30day",
+        granularity = 86400,
+        from_timestamp = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
+        to_timestamp = Math.floor(Date.now() / 1000),
+    }: {
+        vaultAddress: string;
+        network: Chains;
+        interval?: "1day" | "7day" | "30day";
+        from_timestamp?: number;
+        to_timestamp?: number;
+        granularity?: number;
+    }): Promise<HistoricalApy[] | null> {
+        let page = 0;
+        let allData: HistoricalApy[] = [];
+        while (true) {
+            const data = await this.request<HistoricalApyResponse>(
+                `/vaults/${network}/${vaultAddress}/historical-apy`,
+                { interval, granularity, from_timestamp, to_timestamp, page }
+            );
+
+            elizaLogger.info("data in historical apy", data);
+            if (!data) {
+                break;
+            }
+            allData = [...allData, ...data.data];
+            if (!data.next_page) {
+                break;
+            }
+            page++;
+        }
+        return allData;
     }
 
     public async getHistoricalApy({
@@ -165,6 +206,7 @@ class VaultsFyiApi {
                 `/vaults/${network}/${vaultAddress}/historical-apy`,
                 { interval, granularity, from_timestamp, to_timestamp, page }
             );
+            elizaLogger.info("data in historical apy", data);
             if (!data) {
                 break;
             }
