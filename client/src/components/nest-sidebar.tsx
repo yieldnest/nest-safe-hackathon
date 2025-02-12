@@ -20,7 +20,7 @@ export function NestSidebar() {
 
     return (
         <Sidebar side="right" width="24rem">
-            <SidebarHeader>
+            {/* <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
@@ -34,7 +34,7 @@ export function NestSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-            </SidebarHeader>
+            </SidebarHeader> */}
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupContent>

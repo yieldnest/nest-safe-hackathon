@@ -23,7 +23,7 @@ export function SafeDetails({ safeDetails }: SafeDetailsProps) {
             <div className="flex flex-col gap-2 px-2 py-2">
                 <div className="flex items-center gap-2">
                     <Wallet className="size-4" />
-                    <span className="text-xs font-medium text-muted-foreground">Safe Account</span>
+                    <span className="text-lg font-medium">Safe Account</span>
                 </div>
                 <div className="pl-6">
                     <div className="flex items-center gap-2 mb-1">
@@ -58,7 +58,7 @@ export function SafeDetails({ safeDetails }: SafeDetailsProps) {
             <div className="flex flex-col gap-2 px-2 py-2">
                 <div className="flex items-center gap-2">
                     <Users className="size-4" />
-                    <span className="text-xs font-medium text-muted-foreground">Signers</span>
+                    <span className="text-lg font-medium">Signers</span>
                 </div>
                 <div className="flex flex-col gap-1.5 pl-6">
                     {safeDetails.owners.map((owner) => (

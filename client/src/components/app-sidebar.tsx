@@ -19,23 +19,23 @@ export function AppSidebar() {
 
     return (
         <Sidebar>
-            <SidebarHeader>
+            <SidebarHeader className="mb-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <NavLink to="/">
                                 <img
-                                    alt="elizaos-icon"
-                                    src="/elizaos-icon.png"
+                                    alt="nest-pfp"
+                                    src="/nest-pfp.png"
                                     width="100%"
                                     height="100%"
-                                    className="size-7"
+                                    className="size-10 mr-1"
                                 />
                                 <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="font-semibold">
-                                        ElizaOS
+                                    <span className="font-semibold text-lg">
+                                        Nest AI
                                     </span>
-                                    <span className="">v{info?.version}</span>
+                                    {/* <span className="">v{info?.version}</span> */}
                                 </div>
                             </NavLink>
                         </SidebarMenuButton>
