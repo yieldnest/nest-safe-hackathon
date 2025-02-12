@@ -4,12 +4,9 @@ import {
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarHeader,
     SidebarMenu,
-    SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { NavLink } from "react-router";
 import { ConnectButton } from "./ConnectButton";
 import { useSafeDetails } from "@/hooks/use-safe-details";
 import { FundSafe } from './fund-safe.tsx';

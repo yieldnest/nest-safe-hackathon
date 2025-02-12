@@ -10,9 +10,8 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavLink, useLocation } from "react-router";
-import { Book, Cog, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import ConnectionStatus from "./connection-status";
-import info from "@/lib/info.json";
 
 export function AppSidebar() {
     const location = useLocation();
