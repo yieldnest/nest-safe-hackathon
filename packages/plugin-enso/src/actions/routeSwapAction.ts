@@ -50,6 +50,8 @@ export const routeSwapAction: Action = {
                 throw new Error("ENSO_API_KEY not found in environment");
             }
 
+            console.log('enso request', options)
+
             const requestUrl = `https://api.enso.finance/api/v1/shortcuts/route?chainId=${chainId}&fromAddress=${fromAddress}&spender=${spender}&receiver=${receiver}&priceImpact=${priceImpact}&amountIn=${amountIn}&slippage=${slippage}&tokenIn=${tokenIn}&tokenOut=${tokenOut}&routingStrategy=delegate`;
 
             // Make request to Enso API
@@ -66,6 +68,8 @@ export const routeSwapAction: Action = {
                 throw new Error(`Enso API error: ${errorData.message || response.statusText}`);
             }
             const data = await response.json();
+
+            console.log('enso response', data)
 
             // Format the response for the user
             const resultMessage = `Quote received:

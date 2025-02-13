@@ -62,6 +62,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             // Call the route swap action for the first strategy
             const swapResponseData = await apiClient.executeAction("ROUTE_SWAP", {
                 fromAddress: safeDetails?.address,
+                receiver: safeDetails?.address,
                 tokenIn: strategy.tokenIn,
                 tokenOut: strategy.tokenOut,
                 amountIn: strategy.amountIn,
@@ -89,32 +90,49 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                     chainId: arbitrum.id
                 });
 
-                const prepareResponse = await apiClient.executeAction("PREPARE_SAFE_TRANSACTION", {
+                const prepareResponseData = await apiClient.executeAction("PREPARE_SAFE_TRANSACTION", {
                     safeAddress: safeDetails?.address,
                     to: swapResponse.data.tx.to,
                     value: swapResponse.data.tx.value,
                     data: swapResponse.data.tx.data,
                     gas: swapResponse.data.gas,
+                    operation: swapResponse.data.tx.operationType,
                     chainId: arbitrum.id
                 }, agent.id);
+                const prepareResponse = prepareResponseData.content.content;
 
                 console.log("Prepare response:", prepareResponse);
 
-                if (!prepareResponse?.content?.content?.success) {
+                if (!prepareResponse?.success) {
                     throw new Error("Failed to prepare safe transaction");
                 }
 
-                const pendingTxResponseData = await apiClient.executeAction("GET_PENDING_TRANSACTIONS", {
-                    safeAddress: safeDetails?.address
-                }, agent.id);
-                pendingTxResponse = pendingTxResponseData.content.content;
+                // const pendingTxResponseData = await apiClient.executeAction("GET_PENDING_TRANSACTIONS", {
+                //     safeAddress: safeDetails?.address
+                // }, agent.id);
+                // pendingTxResponse = pendingTxResponseData.content.content;
 
-                const txToSign = await checkPendingTransaction(pendingTxResponse, swapResponse);
+                // const txToSign = await checkPendingTransaction(pendingTxResponse, swapResponse);
 
-                if (txToSign) {
-                    console.log("Requesting signature for transaction:", txToSign);
-                    await signAndVerify(txToSign, safeDetails?.address as `0x${string}`, address);
+                
+                const txToSign = {
+                    to: prepareResponse.transaction.to,
+                    value: prepareResponse.transaction.value,
+                    data: prepareResponse.transaction.data || '0x',
+                    operation: prepareResponse.transaction.operation,
+                    safeTxGas: prepareResponse.transaction.safeTxGas,
+                    baseGas: prepareResponse.transaction.baseGas,
+                    gasPrice: prepareResponse.transaction.gasPrice,
+                    gasToken: prepareResponse.transaction.gasToken,
+                    refundReceiver: prepareResponse.transaction.refundReceiver,
+                    nonce: prepareResponse.transaction.nonce,
+                    safeTxHash: prepareResponse.transaction.safeTxHash
                 }
+                
+                console.log("Requesting signature for transaction:", txToSign);
+                await signAndVerify(txToSign, safeDetails?.address as `0x${string}`, address);
+                // if (txToSign) {
+                // }
 
                 await apiClient.executeAction("EXECUTE_SAFE_TRANSACTION", {
                     safeAddress: safeDetails?.address

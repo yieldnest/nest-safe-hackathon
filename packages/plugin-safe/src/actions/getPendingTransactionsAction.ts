@@ -60,8 +60,6 @@ export const getPendingTransactionsAction: Action = {
           // Get pending transactions
           const pendingTransactions = await apiKit.getPendingTransactions(safeAddress);
 
-          console.log('Pending transactions:', pendingTransactions);
-
           callback?.({
               text: `Found ${pendingTransactions.count} pending transactions for Safe ${safeAddress}`,
               content: {

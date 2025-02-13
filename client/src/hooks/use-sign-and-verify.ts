@@ -1,5 +1,8 @@
 import { useSignTypedData } from "wagmi";
 import { useToast } from "@/hooks/use-toast";
+// import { useContractWrite, usePrepareContractWrite } from 'wagmi';
+// import { useAccount } from "wagmi";
+// import { safeAbi } from '../abi/safe.abi';
 
 interface TxToSign {
   [key: string]: any;
@@ -47,23 +50,23 @@ export function useSignAndVerifyTransaction() {
 
       console.log("User signature:", signature);
 
-      const response = await fetch(
-        `https://safe-transaction-arbitrum.safe.global/api/v1/multisig-transactions/${txToSign.safeTxHash}/confirmations/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            signature,
-            owner: address,
-          }),
-        }
-      );
+      // const response = await fetch(
+      //   `https://safe-transaction-arbitrum.safe.global/api/v1/multisig-transactions/${txToSign.safeTxHash}/confirmations/`,
+      //   {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify({
+      //       signature,
+      //       owner: address,
+      //     }),
+      //   }
+      // );
 
-      if (!response.ok) {
-        throw new Error('Failed to submit signature to Safe Transaction Service');
-      }
+      // if (!response.ok) {
+      //   throw new Error('Failed to submit signature to Safe Transaction Service');
+      // }
 
       toast({
         title: "Transaction Signed",
