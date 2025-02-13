@@ -3,8 +3,8 @@ import Chat from "@/components/chat";
 import { useAccount } from "wagmi";
 import { useDefaultAgent } from "@/hooks/use-default-agent";
 import { useSafeDetails } from "@/hooks/use-safe-details";
-import { StrategyCard } from "@/components/strategy-card";
-import { DUMMY_STRATEGIES } from "./dummystrategies";
+// import { StrategyCard } from "@/components/strategy-card";
+// import { DUMMY_STRATEGIES } from "./dummystrategies";
 
 export default function ChatRoute() {
     const { isConnected } = useAccount();
