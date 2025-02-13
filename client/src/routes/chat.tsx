@@ -22,20 +22,19 @@ export default function ChatRoute() {
         return <CreateSafeCard />;
     }
 
-    return (
-        <>
-            {
-                safeDetails && safeDetails.address ?
-                    <div className="flex flex-row gap-4">
-                        {DUMMY_STRATEGIES.map((strategy: any, index: number) => (
-                            <StrategyCard key={index} strategy={strategy} />
-                        ))}
-                    </div> 
-                    : 
-                    <CreateSafeCard />
-            }
-        </>
-    );
+    // return (
+    //     <>
+    //         { safeDetails && safeDetails.address ?
+    //             <div className="flex flex-row gap-4">
+    //                 {DUMMY_STRATEGIES.map((strategy: any, index: number) => (
+    //                     <StrategyCard key={index} strategy={strategy} />
+    //                 ))}
+    //             </div> 
+    //             : 
+    //             <CreateSafeCard />
+    //         }
+    //     </>
+    // );
 
     return <Chat agentId={agent.id} />;
 }

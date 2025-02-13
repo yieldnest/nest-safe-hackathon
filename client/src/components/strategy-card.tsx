@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useSafeDetails } from "@/hooks/use-safe-details";
 import { arbitrum } from "viem/chains";
-import { useSignAndVerifyTransaction } from "@/hooks/use-sign-and-verify";
+import { useSignAndExecute } from "@/hooks/use-sign-and-execute";
 import { useCheckPendingTransaction } from '@/hooks/use-check-pending-transaction';
 
 interface Strategy {
@@ -28,7 +28,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
     const { agent } = useDefaultAgent();
     const { toast } = useToast();
     const [loading, setLoading] = useState<{[key: string]: boolean}>({});
-    const { signAndVerify } = useSignAndVerifyTransaction();
+    const { signAndExecute } = useSignAndExecute();
     const { checkPendingTransaction } = useCheckPendingTransaction();
 
     const handlePrepareAndSign = async (strategy: Strategy) => {
@@ -79,7 +79,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
 
             if (txToSign) {
                 console.log("Requesting signature for transaction:", txToSign);
-                await signAndVerify(txToSign, safeDetails?.address as `0x${string}`, address);
+                await signAndExecute(txToSign, safeDetails?.address as `0x${string}`, address);
             } else {
                 console.log("Preparing safe transaction with params:", {
                     safeAddress: safeDetails?.address,
@@ -114,7 +114,6 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
 
                 // const txToSign = await checkPendingTransaction(pendingTxResponse, swapResponse);
 
-                
                 const txToSign = {
                     to: prepareResponse.transaction.to,
                     value: prepareResponse.transaction.value,
@@ -126,17 +125,16 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                     gasToken: prepareResponse.transaction.gasToken,
                     refundReceiver: prepareResponse.transaction.refundReceiver,
                     nonce: prepareResponse.transaction.nonce,
-                    safeTxHash: prepareResponse.transaction.safeTxHash
+                    safeTxHash: prepareResponse.transaction.safeTxHash,
                 }
                 
+                const nestSignature = prepareResponse.signatures.nest;
                 console.log("Requesting signature for transaction:", txToSign);
-                await signAndVerify(txToSign, safeDetails?.address as `0x${string}`, address);
-                // if (txToSign) {
-                // }
+                await signAndExecute(txToSign, safeDetails?.address as `0x${string}`, nestSignature);
 
-                await apiClient.executeAction("EXECUTE_SAFE_TRANSACTION", {
-                    safeAddress: safeDetails?.address
-                }, agent.id);
+                // await apiClient.executeAction("EXECUTE_SAFE_TRANSACTION", {
+                //     safeAddress: safeDetails?.address
+                // }, agent.id);
             }
 
         } catch (error) {
@@ -159,9 +157,6 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                         <h3 className="text-lg font-medium">
                             {strategy.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
-                            {strategy.description}
-                        </p>
                     </div>
                     <Button
                         onClick={() => handlePrepareAndSign(strategy)}

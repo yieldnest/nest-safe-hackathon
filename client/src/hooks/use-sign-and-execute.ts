@@ -1,8 +1,8 @@
 import { useSignTypedData } from "wagmi";
 import { useToast } from "@/hooks/use-toast";
-// import { useContractWrite, usePrepareContractWrite } from 'wagmi';
-// import { useAccount } from "wagmi";
-// import { safeAbi } from '../abi/safe.abi';
+import { useContractWrite, usePrepareContractWrite } from 'wagmi';
+import { safeAbi } from '../abi/safe.abi';
+import { useState, useEffect } from 'react';
 
 interface TxToSign {
   [key: string]: any;
@@ -19,11 +19,40 @@ interface TxToSign {
   safeTxHash: string;
 }
 
-export function useSignAndVerifyTransaction() {
+export function useSignAndExecute() {
   const { signTypedDataAsync } = useSignTypedData();
   const { toast } = useToast();
 
-  const signAndVerify = async (txToSign: TxToSign, safeAddress: string, address: string) => {
+  const [txArgs, setTxArgs] = useState<any>(null);
+
+  const { config } = usePrepareContractWrite({
+    address: txArgs?.safeAddress,
+    abi: safeAbi,
+    functionName: 'execTransaction',
+    args: txArgs ? [
+      txArgs.to,
+      txArgs.value,
+      txArgs.data,
+      txArgs.operation,
+      txArgs.safeTxGas,
+      txArgs.baseGas,
+      txArgs.gasPrice,
+      txArgs.gasToken,
+      txArgs.refundReceiver,
+      txArgs.signature,
+    ] : undefined,
+    enabled: !!txArgs,
+  });
+
+  const { write } = useContractWrite(config);
+
+  useEffect(() => {
+    if (write) {
+      write();
+    }
+  }, [write]);
+
+  const signAndExecute = async (txToSign: TxToSign, safeAddress: string, nestSignature: string) => {
     try {
       const signature = await signTypedDataAsync({
         domain: {
@@ -47,31 +76,19 @@ export function useSignAndVerifyTransaction() {
         primaryType: "SafeTx",
         message: txToSign,
       });
-
-      console.log('address', address)
-      console.log("User signature:", signature);
-
-      // const response = await fetch(
-      //   `https://safe-transaction-arbitrum.safe.global/api/v1/multisig-transactions/${txToSign.safeTxHash}/confirmations/`,
-      //   {
-      //     method: 'POST',
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //     },
-      //     body: JSON.stringify({
-      //       signature,
-      //       owner: address,
-      //     }),
-      //   }
-      // );
-
-      // if (!response.ok) {
-      //   throw new Error('Failed to submit signature to Safe Transaction Service');
-      // }
-
       toast({
         title: "Transaction Signed",
         description: "Transaction has been signed and will be executed shortly.",
+      });
+
+      // Combine signatures
+      const combinedSignature = '0x' + [signature, nestSignature].map((s) => s.slice(2)).join('');
+
+      // Set transaction arguments for contract write
+      setTxArgs({
+        ...txToSign,
+        safeAddress,
+        signature: combinedSignature,
       });
 
     } catch (error) {
@@ -84,5 +101,5 @@ export function useSignAndVerifyTransaction() {
     }
   };
 
-  return { signAndVerify };
+  return { signAndExecute };
 }
