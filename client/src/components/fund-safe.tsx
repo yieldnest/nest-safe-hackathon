@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useSafeDetails } from '@/hooks/use-safe-details';
 
 interface FundSafeProps {
-    safeAddress: string;
+    safeAddress?: string;
 }
 
 export function FundSafe({ safeAddress }: FundSafeProps) {
@@ -60,19 +60,19 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
     });
 
     return (
-        <div className="flex flex-col gap-4 px-2 py-2">
+        <div className="bg-nest rounded-sm border border-nest-light flex flex-col gap-4 px-2 py-2 w-full">
             <div className="relative">
-                <div className="flex items-center border rounded-md">
+                <div className="flex items-center border rounded-md bg-nest-super-light">
                     <input
                         type="number"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="Enter amount in ETH"
-                        className="input h-12 px-4 py-2 flex-1 appearance-none rounded-l-md"
+                        className="bg-nest-super-light input h-12 px-4 py-2 flex-1 appearance-none rounded-l-md bg-nest-page focus:outline-none"
                         style={{ MozAppearance: 'textfield' }}
                         onWheel={(e) => e.currentTarget.blur()}
                     />
-                    <span onClick={handleMaxClick} className="cursor-pointer px-4">
+                    <span onClick={handleMaxClick} className="cursor-pointer px-2.5 py-1 bg-nest-gold rounded-md mr-2 text-nest font-medium text-xs">
                         Max
                     </span>
                 </div>
@@ -82,9 +82,9 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
                     </div>
                 )}
             </div>
-            <Button onClick={handleFundSafe} disabled={!amount || isLoading}>
+            <Button onClick={handleFundSafe} disabled={!amount || isLoading} className='bg-nest-gold text-nest h-12'>
                 {isLoading ? <Loader2 className="animate-spin mr-2" /> : null}
-                Fund Safe
+                Deposit
             </Button>
         </div>
     );

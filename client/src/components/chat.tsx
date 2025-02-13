@@ -14,7 +14,7 @@ import type { Content, UUID } from "@elizaos/core";
 import { animated, useTransition, type AnimatedProps } from "@react-spring/web";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Paperclip, Send, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AIWriter from "react-aiwriter";
 import { AudioRecorder } from "./audio-recorder";
 import CopyButton from "./copy-button";
@@ -212,8 +212,8 @@ export default function Page({ agentId }: { agentId: UUID }) {
     const CustomAnimatedDiv = animated.div as React.FC<AnimatedDivProps>;
 
     return (
-        <div className="flex flex-col w-full h-[calc(100dvh)] p-4">
-            <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-col w-full h-[calc(100dvh)] px-5 py-3 gap-3">
+            <div className="flex-1 overflow-y-auto bg-nest rounded-sm">
                 <ChatMessageList
                     scrollRef={scrollRef}
                     isAtBottom={isAtBottom}
@@ -229,7 +229,6 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                     display: "flex",
                                     flexDirection: "column",
                                     gap: "0.5rem",
-                                    padding: "1rem",
                                 }}
                             >
                                 <ChatBubble
@@ -237,13 +236,14 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                     className="flex flex-row items-center gap-2"
                                 >
                                     {message?.user !== "user" ? (
-                                        <Avatar className="size-8 rounded-full select-none">
+                                        <Avatar className="size-8 rounded-sm select-none border border-[#F4F4F1]">
                                             <AvatarImage src="/nest-pfp.png" />
                                         </Avatar>
                                     ) : null}
                                     <div className="flex flex-col">
                                         <ChatBubbleMessage
                                             isLoading={message?.isLoading}
+                                            variant={variant}
                                         >
                                             {message?.user !== "user" ? (
                                                 <AIWriter>
@@ -327,92 +327,90 @@ export default function Page({ agentId }: { agentId: UUID }) {
                     })}
                 </ChatMessageList>
             </div>
-            <div className="px-4 pb-4">
-                <form
-                    ref={formRef}
-                    onSubmit={handleSend}
-                    className="relative rounded-md border bg-card"
-                >
-                    {selectedFile ? (
-                        <div className="p-3 flex">
-                            <div className="relative rounded-md border p-2">
+            <form
+                ref={formRef}
+                onSubmit={handleSend}
+                className="relative rounded-md border bg-nest-super-light"
+            >
+                {selectedFile ? (
+                    <div className="p-3 flex">
+                        <div className="relative rounded-md border p-2">
+                            <Button
+                                onClick={() => setSelectedFile(null)}
+                                className="absolute -right-2 -top-2 size-[22px] ring-2 ring-background"
+                                variant="outline"
+                                size="icon"
+                            >
+                                <X />
+                            </Button>
+                            <img
+                                alt="Selected file"
+                                src={URL.createObjectURL(selectedFile)}
+                                height="100%"
+                                width="100%"
+                                className="aspect-square object-contain w-16"
+                            />
+                        </div>
+                    </div>
+                ) : null}
+                <ChatInput
+                    ref={inputRef}
+                    onKeyDown={handleKeyDown}
+                    value={input}
+                    onChange={({ target }) => setInput(target.value)}
+                    placeholder="Type your message here..."
+                    className="min-h-12 resize-none rounded-md bg-nest-super-light border-0 p-3 shadow-none focus-visible:ring-0"
+                />
+                <div className="flex items-center p-3 pt-0">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
                                 <Button
-                                    onClick={() => setSelectedFile(null)}
-                                    className="absolute -right-2 -top-2 size-[22px] ring-2 ring-background"
-                                    variant="outline"
+                                    variant="ghost"
                                     size="icon"
+                                    onClick={() => {
+                                        if (fileInputRef.current) {
+                                            fileInputRef.current.click();
+                                        }
+                                    }}
                                 >
-                                    <X />
+                                    <Paperclip className="size-4" />
+                                    <span className="sr-only">
+                                        Attach file
+                                    </span>
                                 </Button>
-                                <img
-                                    alt="Selected file"
-                                    src={URL.createObjectURL(selectedFile)}
-                                    height="100%"
-                                    width="100%"
-                                    className="aspect-square object-contain w-16"
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    accept="image/*"
+                                    className="hidden"
                                 />
                             </div>
-                        </div>
-                    ) : null}
-                    <ChatInput
-                        ref={inputRef}
-                        onKeyDown={handleKeyDown}
-                        value={input}
-                        onChange={({ target }) => setInput(target.value)}
-                        placeholder="Type your message here..."
-                        className="min-h-12 resize-none rounded-md bg-card border-0 p-3 shadow-none focus-visible:ring-0"
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                            <p>Attach file</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <AudioRecorder
+                        agentId={agentId}
+                        onChange={(newInput: string) => setInput(newInput)}
                     />
-                    <div className="flex items-center p-3 pt-0">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => {
-                                            if (fileInputRef.current) {
-                                                fileInputRef.current.click();
-                                            }
-                                        }}
-                                    >
-                                        <Paperclip className="size-4" />
-                                        <span className="sr-only">
-                                            Attach file
-                                        </span>
-                                    </Button>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleFileChange}
-                                        accept="image/*"
-                                        className="hidden"
-                                    />
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="left">
-                                <p>Attach file</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <AudioRecorder
-                            agentId={agentId}
-                            onChange={(newInput: string) => setInput(newInput)}
-                        />
-                        <Button
-                            disabled={
-                                !input || startConversationMutation?.isPending
-                            }
-                            type="submit"
-                            size="sm"
-                            className="ml-auto gap-1.5 h-[30px]"
-                        >
-                            {startConversationMutation?.isPending
-                                ? "..."
-                                : "Send Message"}
-                            <Send className="size-3.5" />
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                    <Button
+                        disabled={
+                            !input || startConversationMutation?.isPending
+                        }
+                        type="submit"
+                        size="sm"
+                        className="ml-auto gap-1.5 h-[30px]"
+                    >
+                        {startConversationMutation?.isPending
+                            ? "..."
+                            : "Send Message"}
+                        <Send className="size-3.5" />
+                    </Button>
+                </div>
+            </form>
         </div>
     );
 }

@@ -16,7 +16,8 @@ export default {
     				'Segoe UI Emoji',
     				'Segoe UI Symbol',
     				'Noto Color Emoji'
-    			]
+    			],
+				vt323: ['VT323']
     		},
     		borderRadius: {
     			lg: 'var(--radius)',
@@ -76,7 +77,18 @@ export default {
     				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
     				border: 'hsl(var(--sidebar-border))',
     				ring: 'hsl(var(--sidebar-ring))'
-    			}
+    			},
+    			nest: {
+    				DEFAULT: '#002134',
+    				light: '#334155',  // lighter shade for hover/active states
+    				dark: '#001829',   // darker shade if needed
+    				border: '#334155', // border color
+    				gold: '#E9C787',   // gold accent color
+					page: '#1E293B',
+					green: '#009951',
+					'green-gradient': 'radial-gradient(50% 50% at 50% 50%, #245D12 0%, #093100 100%)',
+					'super-light': '#334155'
+    			},
     		}
     	}
     },
