@@ -14,10 +14,9 @@ import Safe, {
     SafeDeploymentConfig,
 } from '@safe-global/protocol-kit';
 
-import { sepolia } from 'viem/chains';
-import { createPublicClient, createWalletClient, http, formatUnits } from 'viem';
+import { arbitrum } from 'viem/chains';
+import { createPublicClient, http, formatUnits } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { waitForTransactionReceipt } from 'viem/actions';
 
 export const deployNewSafeAction: Action = {
     name: "DEPLOY_NEW_SAFE_ACCOUNT",
@@ -62,7 +61,7 @@ export const deployNewSafeAction: Action = {
 
             // Create a public client to fetch and log the account balance
             const publicClient = createPublicClient({
-                chain: sepolia,
+                chain: arbitrum,
                 transport: http(rpcUrl),
             });
 
@@ -108,7 +107,7 @@ export const deployNewSafeAction: Action = {
                 to: deploymentTransaction.to,
                 value: BigInt(deploymentTransaction.value || '0'),
                 data: deploymentTransaction.data as `0x${string}`,
-                chain: sepolia,
+                chain: arbitrum,
             });
 
             // Wait for the transaction receipt
@@ -132,7 +131,7 @@ Transaction hash: ${txHash}
 Safe address: ${deployedSafeAddress}
 Is Safe deployed: ${isSafeDeployed}
 Owners: ${safeOwners.join(', ')}
-Threshold: ${safeThreshold}
+Threshold: ${safeThreshold.toString()}
 Nest balance: ${formattedBalance} ETH`;
             callback?.({
                 text: resultMessage,

@@ -9,11 +9,7 @@ import {
 } from '@elizaos/core';
 
 import Safe from '@safe-global/protocol-kit';
-import { sepolia } from 'viem/chains';
-import { createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-
-const RPC_URL = 'https://rpc.ankr.com/eth_sepolia';
 
 export const checkSafeAction: Action = {
   name: "CHECK_SAFE_ACCOUNT",
@@ -41,8 +37,9 @@ export const checkSafeAction: Action = {
 
       // Get Nest's private key and derive address
       const nestPrivateKey = runtime.getSetting("EVM_PRIVATE_KEY");
-      if (!nestPrivateKey) {
-          throw new Error("Missing EVM_PRIVATE_KEY for Nest");
+      const rpcUrl = runtime.getSetting("EVM_PROVIDER_URL");
+      if (!nestPrivateKey || !rpcUrl) {
+          throw new Error("Missing EVM_PRIVATE_KEY or EVM_PROVIDER_URL for Nest");
       }
 
       const formattedPrivateKey = nestPrivateKey.startsWith('0x')
@@ -54,7 +51,7 @@ export const checkSafeAction: Action = {
       // Initialize the Protocol Kit with the predicted safe configuration.
       // (Using (Safe as any).init() for simplicity. In production, create a proper signer instance.)
       const protocolKit = await (Safe as any).init({
-        provider: RPC_URL,
+        provider: rpcUrl,
         signer: formattedPrivateKey,
         predictedSafe: {
           safeAccountConfig: {

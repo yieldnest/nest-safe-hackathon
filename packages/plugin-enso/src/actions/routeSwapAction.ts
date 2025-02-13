@@ -7,9 +7,9 @@ import {
 } from '@elizaos/core';
 
 export const routeSwapAction: Action = {
-    name: "ROUTE_TOKEN_SWAP",
-    description: "Routes a token swap through Enso's Router API to find the best execution path",
-    similes: ["swap tokens", "exchange tokens", "trade tokens", "convert tokens"],
+    name: "ROUTE_SWAP",
+    description: "Routes a token swap through Enso's API to find the best execution path",
+    similes: ["swap tokens", "exchange tokens", "trade tokens"],
     examples: [
         [
             {
@@ -28,77 +28,64 @@ export const routeSwapAction: Action = {
     ): Promise<boolean> => {
         try {
             // Get required parameters
-            const userAddress = options?.ownerAddress as string;
+            const fromAddress = options?.fromAddress as string;
             const tokenIn = options?.tokenIn as string;
             const tokenOut = options?.tokenOut as string;
             const amountIn = options?.amountIn as string;
-            const chainId = options?.chainId || "1"; // Default to Ethereum mainnet
+            const chainId = options?.chainId || "42161";
+            const spender = options?.spender as string || fromAddress;
+            const receiver = options?.receiver as string || fromAddress;
+            const priceImpact = options?.priceImpact as boolean || false;
+            const slippage = options?.slippage as number || 300;
 
-            if (!userAddress) {
-                throw new Error("User's wallet address is required");
+            if (!fromAddress) {
+                throw new Error("fromAddress is required");
             }
             if (!tokenIn || !tokenOut || !amountIn) {
                 throw new Error("tokenIn, tokenOut, and amountIn are required parameters");
             }
 
-            // Get API key from runtime settings
             const apiKey = runtime.getSetting("ENSO_API_KEY");
             if (!apiKey) {
-                throw new Error("ENSO_API_KEY not found in settings");
+                throw new Error("ENSO_API_KEY not found in environment");
             }
 
-            // Prepare the request body
-            const requestBody = [{
-                protocol: "enso",
-                action: "route",
-                args: {
-                    tokenIn,
-                    tokenOut,
-                    amountIn
-                }
-            }];
+            const requestUrl = `https://api.enso.finance/api/v1/shortcuts/route?chainId=${chainId}&fromAddress=${fromAddress}&spender=${spender}&receiver=${receiver}&priceImpact=${priceImpact}&amountIn=${amountIn}&slippage=${slippage}&tokenIn=${tokenIn}&tokenOut=${tokenOut}&routingStrategy=delegate`;
 
             // Make request to Enso API
-            const response = await fetch(
-                `https://api.enso.finance/api/v1/shortcuts/bundle?chainId=${chainId}&fromAddress=${userAddress}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify(requestBody)
+            const response = await fetch(requestUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
                 }
-            );
+            });
 
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(`Enso API error: ${errorData.message || response.statusText}`);
             }
-
             const data = await response.json();
 
             // Format the response for the user
-            const resultMessage = `Swap route found:
+            const resultMessage = `Quote received:
 From: ${tokenIn}
 To: ${tokenOut}
 Amount In: ${amountIn}
-Expected Output: ${data.expectedOutput || 'Not available'}
-Route Path: ${data.path?.join(' -> ') || 'Direct swap'}
-Gas Estimate: ${data.gasEstimate || 'Not available'}`;
+Estimated Amount Out: ${data.amountOut || 'Not available'}
+Gas Estimate: ${data.gas || 'Not available'}`;
 
             callback?.({
                 text: resultMessage,
                 content: {
                     success: true,
                     data: data,
-                    route: {
+                    quote: {
                         tokenIn,
                         tokenOut,
                         amountIn,
-                        expectedOutput: data.expectedOutput,
-                        path: data.path,
-                        gasEstimate: data.gasEstimate
+                        estimatedAmountOut: data.amountOut,
+                        gasEstimate: data.gas
                     }
                 }
             });

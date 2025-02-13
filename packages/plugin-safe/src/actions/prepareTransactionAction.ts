@@ -9,13 +9,12 @@ import {
 import Safe from '@safe-global/protocol-kit';
 import { OperationType, SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types';
 import { privateKeyToAccount } from 'viem/accounts';
-import { sepolia } from 'viem/chains';
+import { arbitrum } from 'viem/chains';
 import { createPublicClient, http } from 'viem';
 import SafeAPIKitImport from '@safe-global/api-kit'
+import { transactionServiceConfig } from '../index.js';
 
 const SafeApiKit = SafeAPIKitImport.default
-
-const CHAIN_ID = 11155111n; // Sepolia
 
 export const prepareTransactionAction: Action = {
   name: "PREPARE_SAFE_TRANSACTION",
@@ -44,6 +43,7 @@ export const prepareTransactionAction: Action = {
           const to = options?.to as string;
           const value = options?.value as string;
           const data = options?.data as string || '0x';
+          const gas = options?.gas as string || '21000';
           const operation = options?.operation as number || OperationType.Call;
           const strategyName = options?.strategyName as string || 'Unknown Strategy';
           const strategyDescription = options?.strategyDescription as string || '';
@@ -68,7 +68,7 @@ export const prepareTransactionAction: Action = {
 
           // Create a public client
           const publicClient = createPublicClient({
-              chain: sepolia,
+              chain: arbitrum,
               transport: http(rpcUrl),
           });
 
@@ -83,14 +83,8 @@ export const prepareTransactionAction: Action = {
               isL1SafeSingleton: true,
           });
 
-          const safeTxGas = await publicClient.estimateGas({
-            to: to as `0x${string}`,
-            value: BigInt(value),
-            data: data as `0x${string}`,
-          });
 
           const gasPrice = await publicClient.getGasPrice();
-
           const nonce = await safe.getNonce(safeAddress);
           console.log('nonce', nonce)
           // Create transaction data
@@ -99,8 +93,8 @@ export const prepareTransactionAction: Action = {
               value,
               data,
               operation,
-              safeTxGas: safeTxGas.toString(),
-              baseGas: '21000', // Minimum base gas
+              safeTxGas: gas,
+              baseGas: gas,
               nonce: nonce,
               gasPrice: gasPrice.toString(),
               gasToken: '0x0000000000000000000000000000000000000000',
@@ -119,8 +113,8 @@ export const prepareTransactionAction: Action = {
 
           // Check for existing pending transactions
           const apiKit = new SafeApiKit({
-              chainId: CHAIN_ID,
-              txServiceUrl: 'https://safe-transaction-sepolia.safe.global/api'
+              chainId: transactionServiceConfig.chainId,
+              txServiceUrl: transactionServiceConfig.txServiceUrl
           });
 
           const pendingTransactions = await apiKit.getPendingTransactions(safeAddress);

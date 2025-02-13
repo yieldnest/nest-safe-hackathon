@@ -16,40 +16,44 @@ export const useSafeDetails = () => {
     const [safeDetails, setSafeDetails] = useState<SafeDetails | undefined>();
     const { toast } = useToast();
 
-    useEffect(() => {
-        const checkExistingSafe = async () => {
-            if (!agent?.id || !isConnected || !address) {
-                setSafeDetails(undefined);
-                return;
-            }
+    const checkExistingSafe = async () => {
+        if (!agent?.id || !isConnected || !address) {
+            setSafeDetails(undefined);
+            return;
+        }
 
-            try {
-                const response = await apiClient.executeAction("CHECK_SAFE_ACCOUNT", {
-                    ownerAddress: address
-                }, agent.id);
-                
-                if (response.content?.content?.isSafeDeployed) {
-                    setSafeDetails({
-                        address: response.content.content.safeAddress,
-                        owners: response.content.content.safeOwners,
-                        threshold: response.content.content.safeThreshold
-                    });
-                } else {
-                    setSafeDetails(undefined);
-                }
-            } catch (error) {
-                console.error("Error checking Safe:", error);
-                toast({
-                    title: "Error",
-                    description: "Failed to check Safe status",
-                    variant: "destructive",
+        try {
+            const response = await apiClient.executeAction("CHECK_SAFE_ACCOUNT", {
+                ownerAddress: address
+            }, agent.id);
+            
+            if (response.content?.content?.isSafeDeployed) {
+                setSafeDetails({
+                    address: response.content.content.safeAddress,
+                    owners: response.content.content.safeOwners,
+                    threshold: response.content.content.safeThreshold
                 });
+            } else {
                 setSafeDetails(undefined);
             }
-        };
+        } catch (error) {
+            console.error("Error checking Safe:", error);
+            toast({
+                title: "Error",
+                description: "Failed to check Safe status",
+                variant: "destructive",
+            });
+            setSafeDetails(undefined);
+        }
+    };
 
+    useEffect(() => {
         checkExistingSafe();
     }, [agent?.id, address, isConnected]);
 
-    return safeDetails;
+    const refetch = () => {
+        checkExistingSafe();
+    };
+
+    return { safeDetails, refetch };
 };

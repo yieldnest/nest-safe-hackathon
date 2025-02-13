@@ -4,11 +4,16 @@ import { useAccount } from "wagmi";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import { useDefaultAgent } from "@/hooks/use-default-agent";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useSafeDetails } from "@/hooks/use-safe-details";
 
 export function CreateSafeCard() {
     const { address, isConnected } = useAccount();
     const { agent } = useDefaultAgent();
     const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    const { refetch: refetchSafeDetails } = useSafeDetails();
 
     const handleCreateSafe = async () => {
         if (!isConnected || !address) {
@@ -30,6 +35,7 @@ export function CreateSafeCard() {
         }
 
         try {
+            setIsLoading(true);
             // Call the DEPLOY_NEW_SAFE_ACCOUNT action through the API
             const response = await apiClient.executeAction("DEPLOY_NEW_SAFE_ACCOUNT", {
                 ownerAddress: address,
@@ -40,6 +46,8 @@ export function CreateSafeCard() {
                     title: "Safe Created!",
                     description: `Your Safe wallet has been created at ${response.content?.safeAddress || response.safeAddress}`,
                 });
+                // Refetch safe details to update the component
+                refetchSafeDetails();
             } else {
                 throw new Error(response.error || "Failed to create Safe");
             }
@@ -49,6 +57,8 @@ export function CreateSafeCard() {
                 description: error instanceof Error ? error.message : "Failed to create Safe",
                 variant: "destructive",
             });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -73,9 +83,16 @@ export function CreateSafeCard() {
                     </div>
                     <Button
                         onClick={handleCreateSafe}
-                        disabled={!isConnected}
+                        disabled={!isConnected || isLoading}
                     >
-                        Create Safe
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating Safe...
+                            </>
+                        ) : (
+                            "Create Safe"
+                        )}
                     </Button>
                 </CardContent>
             </Card>

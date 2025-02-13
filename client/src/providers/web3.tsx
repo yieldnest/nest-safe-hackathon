@@ -4,13 +4,13 @@ import {
     RainbowKitProvider,
 } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
-import { sepolia } from "viem/chains";
+import { arbitrum } from "viem/chains";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
 // Configure chains & providers
 const { chains, publicClient } = configureChains(
-    [sepolia],
+    [arbitrum],
     [
         jsonRpcProvider({
             rpc: () => ({

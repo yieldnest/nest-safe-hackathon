@@ -3,6 +3,7 @@ import { useSendTransaction, useAccount, useBalance } from 'wagmi';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
+import { useSafeDetails } from '@/hooks/use-safe-details';
 
 interface FundSafeProps {
     safeAddress: string;
@@ -14,6 +15,7 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const { address } = useAccount();
     const { data: balanceData } = useBalance({ address });
+    const { refetch: refetchSafeDetails } = useSafeDetails();
 
     const handleMaxClick = () => {
         if (balanceData) {
@@ -21,26 +23,6 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
             setAmount(maxAmount);
         }
     };
-
-    const { sendTransaction } = useSendTransaction({
-        to: safeAddress,
-        value: amount ? BigInt(parseFloat(amount) * 1e18) : BigInt(0), // Convert ETH to wei
-        onSuccess: () => {
-            setIsLoading(false);
-            toast({
-                title: "Transaction Sent",
-                description: `Successfully sent ${amount} ETH to the Safe.`,
-            });
-        },
-        onError: (error) => {
-            setIsLoading(false);
-            toast({
-                title: "Transaction Failed",
-                description: error.message,
-                variant: "destructive",
-            });
-        },
-    });
 
     const handleFundSafe = () => {
         if (!amount || parseFloat(amount) <= 0) {
@@ -54,6 +36,28 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
         setIsLoading(true);
         sendTransaction();
     };
+
+    const { sendTransaction } = useSendTransaction({
+        to: safeAddress,
+        value: amount ? BigInt(parseFloat(amount) * 1e18) : BigInt(0), // Convert ETH to wei
+        onSuccess: async () => {
+            setIsLoading(false);
+            toast({
+                title: "Transaction Sent",
+                description: `Successfully sent ${amount} ETH to the Safe.`,
+            });
+            // Wait for transaction confirmation and then refetch safe details
+            await refetchSafeDetails();
+        },
+        onError: (error) => {
+            setIsLoading(false);
+            toast({
+                title: "Transaction Failed",
+                description: error.message,
+                variant: "destructive",
+            });
+        },
+    });
 
     return (
         <div className="flex flex-col gap-4 px-2 py-2">
