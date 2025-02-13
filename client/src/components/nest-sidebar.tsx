@@ -24,11 +24,7 @@ export function NestSidebar() {
     const renderContent = () => {
         if (safeDetails) {
             return (
-                <>
-                    <SafeDetails safeDetails={safeDetails} />
-                    <hr className="my-4 border-t border-200" />
-                    <FundSafe safeAddress={safeDetails.address} />
-                </>
+                <FundSafe safeAddress={safeDetails.address} />
             );
         }
 
@@ -47,7 +43,7 @@ export function NestSidebar() {
         <Sidebar side="right" width="470px" className="bg-nest m-3 h-[calc(100svh-1.5rem)] rounded-sm border border-nest-light">
             <SidebarHeader className="py-5 px-3.5">
                 <span className="text-xl font-medium">
-                    Nest Accounts
+                    Nest AI Accounts
                 </span>
                 <NestHeaderActions />
                 <div className="border-b border-nest-light mt-2"/>
