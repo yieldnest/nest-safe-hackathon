@@ -21,7 +21,7 @@ function App() {
     return (
         <Web3Provider>
             <div className="min-h-screen">
-                <main className="py-6">
+                <main>
                     <QueryClientProvider client={queryClient}>
                         <div
                             className="dark antialiased"

@@ -9,16 +9,16 @@ export default function ChatRoute() {
     const { agent, isLoading: isLoadingAgent } = useDefaultAgent();
     const safeDetails = useSafeDetails();
 
-    if (isLoadingAgent) return <div>Loading...</div>;
-    if (!agent) return <div>No agent found.</div>;
+    // if (isLoadingAgent) return <div>Loading...</div>;
+    // if (!agent) return <div>No agent found.</div>;
 
-    if (!isConnected) {
-        return <CreateSafeCard />;
-    }
+    // if (!isConnected) {
+    //     return <CreateSafeCard />;
+    // }
 
-    if (!safeDetails) {
-        return <CreateSafeCard />;
-    }
+    // if (!safeDetails) {
+    //     return <CreateSafeCard />;
+    // }
 
-    return <Chat agentId={agent.id} />;
+    return <Chat agentId={agent?.id} />;
 }

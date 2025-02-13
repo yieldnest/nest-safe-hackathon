@@ -1,6 +1,7 @@
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarHeader,
@@ -43,7 +44,7 @@ export function NestSidebar() {
     };
 
     return (
-        <Sidebar side="right" width="24rem" className="bg-nest m-3 h-[calc(100svh-1.5rem)] rounded-sm border border-nest-light">
+        <Sidebar side="right" width="470px" className="bg-nest m-3 h-[calc(100svh-1.5rem)] rounded-sm border border-nest-light">
             <SidebarHeader className="py-5 px-3.5">
                 <span className="text-xl font-medium">
                     Nest Accounts
@@ -60,6 +61,11 @@ export function NestSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
+            {isConnected && (
+                <SidebarFooter className="flex justify-center items-center">
+                    <img src='/nest-full.png' className="w-48 h-48" />
+                </SidebarFooter>
+            )}
         </Sidebar>
     );
 }
