@@ -48,6 +48,7 @@ export function useSignAndVerifyTransaction() {
         message: txToSign,
       });
 
+      console.log('address', address)
       console.log("User signature:", signature);
 
       // const response = await fetch(
