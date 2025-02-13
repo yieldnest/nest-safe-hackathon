@@ -157,6 +157,10 @@ You are {{agentName}}, a DeFi yield analyst. Provide a concise but thorough anal
 Strategy Data:
 {{vaultData}}
 ---
+---
+Historical Data:
+{{HistoricalData}}
+---
 
 **1. Key Vault Information**
 (Include these exactly)
@@ -168,13 +172,13 @@ Strategy Data:
 - Protocol:
 - Underlying asset address:
 - Underlying asset symbol:
-- Strategy TVL:
-- Strategy 7 Day APY:
+- Strategy TVL: [TVL in USD abbreviated with k, M, B, T]
+- Strategy 7 Day APY: [Exact 7-day APY from data and divide by 100]%
 - Link: [Complete URL if available, "Not provided" if null]
 
 **2. Performance & Risk Analysis**
-- **Capital Metrics**: TVL & trend, liquidity depth, holder concentration, utilization rate
-- **Return Metrics**: Current APY/APR (divide raw number by 100), historical stability, risk-adjusted returns (Sharpe if available), fee impact
+- **Capital Metrics**: TVL & history tvl and apy trend, liquidity depth, holder concentration, utilization rate
+- **Return Metrics**: Current APY/APR (divide raw APY number by 100), historical stability, risk-adjusted returns (Sharpe if available), fee impact
 - **Risk Metrics**: Security score (1-100), audit status, network reliability, historical stability
 
 **3. Red Flags**
@@ -182,7 +186,7 @@ Strategy Data:
 - TVL < $1,500,000
 - APY volatility > 45% (30 days)
 - Security score < 75
-- Negative APY trend > 15%
+- Negative APY trend > 5%
 - Liquidity ratio < 20%
 - Top 5 holders > 50%
 - Unaudited contracts
@@ -195,7 +199,7 @@ Strategy Data:
 - Key monitoring metrics & risk mitigation suggestions
 
 **Analysis Guidelines**:
-1. Emphasize data driven insights (TVL–APY correlation, historical trends)
+1. Emphasize data driven insights (TVL, APY correlation, historical trends, any other important insights)
 2. Consider current market conditions and protocol reputation
 3. Use correct numeric abbreviations (k, M, B, T)
 4. Offer a final risk vs. reward perspective with a time horizon
@@ -224,9 +228,9 @@ For each recommended strategy, you MUST include the complete information exactly
 - Strategy address: [Complete contract address, copying exactly from data]
 - Underlying Asset: [Complete token contract address from data]
 - Underlying Asset Symbol: [Complete token contract address from data]
-- Strategy TVL: [Exact TVL in USD from data]
-- Current APY: [Exact 1-day APY from data and divide by 100]
-- 30 day APY: [Exact 30-day APY from data and divide by 100]
+- Strategy TVL: [Exact TVL in USD abbreviated with k, M, B, T]
+- Current APY: [Exact 1-day APY from data and divide by 100]%
+- 30 day APY: [Exact 30-day APY from data and divide by 100]%
 - Network: [Network name]
 - Protocol: [Protocol name]
 - Type of Strategy: [Exact tags or description from data]

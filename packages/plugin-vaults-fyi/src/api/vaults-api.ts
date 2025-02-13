@@ -1,8 +1,8 @@
 import { elizaLogger, IAgentRuntime } from "@elizaos/core";
 import {
     Chains,
-    HistoricalApy,
     HistoricalApyResponse,
+    HistoricalData,
     UserAsset,
     UserAssets,
     VaultDepositTx,
@@ -162,16 +162,25 @@ class VaultsFyiApi {
         from_timestamp?: number;
         to_timestamp?: number;
         granularity?: number;
-    }): Promise<HistoricalApy[] | null> {
+    }): Promise<HistoricalData[] | null> {
         let page = 0;
-        let allData: HistoricalApy[] = [];
+        let allData: HistoricalData[] = [];
         while (true) {
+            elizaLogger.info("getting historical with thiese params:", {
+                vaultAddress: vaultAddress,
+                network: network,
+                interval: interval,
+                granularity: granularity,
+                from_timestamp: from_timestamp,
+                to_timestamp: to_timestamp,
+                page: page,
+            });
             const data = await this.request<HistoricalApyResponse>(
-                `/vaults/${network}/${vaultAddress}/historical-apy`,
+                `/vaults/${network}/${vaultAddress}/historical-data`,
                 { interval, granularity, from_timestamp, to_timestamp, page }
             );
 
-            elizaLogger.info("data in historical apy", data);
+            elizaLogger.info("data in historical data", data);
             if (!data) {
                 break;
             }
@@ -184,40 +193,40 @@ class VaultsFyiApi {
         return allData;
     }
 
-    public async getHistoricalApy({
-        vaultAddress,
-        network = "arbitrum",
-        interval = "7day",
-        granularity = 86400,
-        from_timestamp = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
-        to_timestamp = Math.floor(Date.now() / 1000),
-    }: {
-        vaultAddress: string;
-        network: Chains;
-        interval?: "1day" | "7day" | "30day";
-        from_timestamp?: number;
-        to_timestamp?: number;
-        granularity?: number;
-    }): Promise<HistoricalApy[] | null> {
-        let page = 0;
-        let allData: HistoricalApy[] = [];
-        while (true) {
-            const data = await this.request<HistoricalApyResponse>(
-                `/vaults/${network}/${vaultAddress}/historical-apy`,
-                { interval, granularity, from_timestamp, to_timestamp, page }
-            );
-            elizaLogger.info("data in historical apy", data);
-            if (!data) {
-                break;
-            }
-            allData = [...allData, ...data.data];
-            if (!data.next_page) {
-                break;
-            }
-            page++;
-        }
-        return allData;
-    }
+    // public async getHistoricalApy({
+    //     vaultAddress,
+    //     network = "arbitrum",
+    //     interval = "7day",
+    //     granularity = 86400,
+    //     from_timestamp = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
+    //     to_timestamp = Math.floor(Date.now() / 1000),
+    // }: {
+    //     vaultAddress: string;
+    //     network: Chains;
+    //     interval?: "1day" | "7day" | "30day";
+    //     from_timestamp?: number;
+    //     to_timestamp?: number;
+    //     granularity?: number;
+    // }): Promise<HistoricalApy[] | null> {
+    //     let page = 0;
+    //     let allData: HistoricalApy[] = [];
+    //     while (true) {
+    //         const data = await this.request<HistoricalApyResponse>(
+    //             `/vaults/${network}/${vaultAddress}/historical-apy`,
+    //             { interval, granularity, from_timestamp, to_timestamp, page }
+    //         );
+    //         elizaLogger.info("data in historical apy", data);
+    //         if (!data) {
+    //             break;
+    //         }
+    //         allData = [...allData, ...data.data];
+    //         if (!data.next_page) {
+    //             break;
+    //         }
+    //         page++;
+    //     }
+    //     return allData;
+    // }
 
     private async request<T>(
         url: string,

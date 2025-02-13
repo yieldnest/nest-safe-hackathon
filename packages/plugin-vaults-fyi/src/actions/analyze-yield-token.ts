@@ -14,7 +14,11 @@ import {
     extractVaultInfoTemplate,
     optimizedVaultAnalysisTemplate,
 } from "../templates";
-import { UserVaultsAnalyzeLLMResponse, VaultDetailed } from "../types";
+import {
+    HistoricalData,
+    UserVaultsAnalyzeLLMResponse,
+    VaultDetailed,
+} from "../types";
 
 export const analyzeYieldTokenAction: Action = {
     name: "ANALYZE_YIELD_TOKEN",
@@ -82,21 +86,23 @@ export const analyzeYieldTokenAction: Action = {
             return;
         }
 
-        // const apyData = await vaultsFyiApi.getHistoricalApy({
-        //     vaultAddress: vaultInfo.vaultAddress,
-        //     network: vaultInfo.network || "arbitrum",
-        // });
+        const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+        const thirtyDaysAgo = now - 30 * 24 * 60 * 60; // 30 days ago in seconds
 
-        // elizaLogger.info("apyData", apyData);
+        const vaultHistory = await vaultsFyiApi.getHistoricalData({
+            vaultAddress: vaultInfo.vaultAddress,
+            network: vaultInfo.network || "arbitrum",
+            interval: "30day",
+            from_timestamp: thirtyDaysAgo,
+            to_timestamp: now,
+        });
 
-        // if (!apyData) {
-        //     callback({
-        //         text: "Failed to get historical apy data",
-        //     });
-        //     return;
-        // }
-
-        const response = await analyzeVault(runtime, vault, message);
+        const response = await analyzeVault(
+            runtime,
+            vault,
+            vaultHistory,
+            message
+        );
 
         if (!response) {
             callback({
@@ -122,12 +128,12 @@ export const analyzeYieldTokenAction: Action = {
 const analyzeVault = async (
     runtime: IAgentRuntime,
     vault: VaultDetailed,
-    // apyData: HistoricalApy[],
+    vaultHistory: HistoricalData[],
     message: Memory
 ): Promise<{ json: UserVaultsAnalyzeLLMResponse; text: string } | null> => {
     const state = await runtime.composeState(message, {
         vaultData: JSON.stringify(vault),
-        // historicalApyData: apyData,
+        HistoricalData: JSON.stringify(vaultHistory),
     });
 
     const contextJson = composeContext({
@@ -139,6 +145,7 @@ const analyzeVault = async (
         runtime: runtime,
         context: contextJson,
         modelClass: ModelClass.LARGE,
+        customTemperature: 0.2,
     });
 
     // save response to memory
