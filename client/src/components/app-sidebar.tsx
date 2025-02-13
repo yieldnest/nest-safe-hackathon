@@ -10,7 +10,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavLink, useLocation } from "react-router-dom";
-import { Settings, Bot, ChevronRight } from "lucide-react";
+import { Settings, ChevronRight } from "lucide-react";
 import ConnectionStatus from "./connection-status";
 import { ConnectButton } from "./ConnectButton";
 
@@ -18,7 +18,7 @@ export function AppSidebar() {
     const location = useLocation();
 
     return (
-        <Sidebar className="w-64 fixed left-0 border-none bg-nest">
+        <Sidebar className="w-[270px] fixed left-0 border-none bg-nest">
             {/* Header with Logo and Title */}
             <SidebarHeader className="px-4">
                 <SidebarMenu>
@@ -58,9 +58,9 @@ export function AppSidebar() {
                                 <NavLink to="/chat">
                                     <SidebarMenuButton 
                                         isActive={location.pathname.includes('/chat')}
-                                        className="w-[90%] flex items-center gap-2 hover:bg-nest-light transition-colors pl-6 rounded-l-none"
+                                        className="w-[90%] flex items-center gap-2 hover:bg-nest-light transition-colors pl-5 rounded-l-none"
                                     >
-                                        <Bot className="h-4 w-4" />
+                                        <img src="/funds-box.svg" className="h-4 w-4" />
                                         <span>Nest AI</span>
                                         <ChevronRight className="h-4 w-4 text-gray-400 ml-auto" />
                                     </SidebarMenuButton>
@@ -73,22 +73,20 @@ export function AppSidebar() {
 
             {/* Footer Section */}
             <SidebarFooter>
-                <SidebarMenu className="gap-4">
+                <SidebarMenu className="gap-1.5 px-5">
                     {/* Others Section */}
-                    <div className="px-4 py-2">
+                    <div className="py-2">
                         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                             OTHERS
                         </h2>
                     </div>
-                        <NavLink to="/settings" className="pl-4">
-                            <SidebarMenuButton className="w-full flex items-center gap-2 hover:bg-nest-light transition-colors">
-                                <Settings className="h-4 w-4" />
-                                <span>Settings</span>
-                            </SidebarMenuButton>
-                        </NavLink>
+                    <NavLink to="/settings" className="flex items-center gap-2 ml-3">
+                        <Settings className="h-4 w-4" />
+                        <span>Settings</span>
+                    </NavLink>
 
                     {/* External Wallet Section */}
-                    <div className="px-4 py-2">
+                    <div className="py-2">
                         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                             EXTERNAL WALLET
                         </h2>

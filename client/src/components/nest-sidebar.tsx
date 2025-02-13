@@ -13,10 +13,12 @@ import { ConnectWalletBlock } from './connect-wallet-block';
 import { CreateAccountBlock } from './create-account-block';
 import { NestHeaderActions } from './nest-header-actions';
 import { useAccount } from "wagmi";
+import { UserTokensList } from "./user-tokens-list.tsx";
 
 export function NestSidebar() {
     const safeDetails = useSafeDetails();
     const { isConnected } = useAccount();
+    const isAccountCreated = true;
 
     const renderContent = () => {
         if (safeDetails) {
@@ -30,6 +32,10 @@ export function NestSidebar() {
         }
 
         if (isConnected) {
+            if (isAccountCreated) {
+                return <UserTokensList />;
+            }
+
             return <CreateAccountBlock />;
         }
 
