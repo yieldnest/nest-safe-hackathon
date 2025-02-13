@@ -2,7 +2,7 @@ import {
     ActionExample,
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateText,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -13,10 +13,10 @@ import {
 import axios from "axios";
 import { validateMoralisConfig } from "../../environment";
 import { getTokenMetadataTemplateArbitrum } from "../../templates/tokenMetadata";
-import { API_ENDPOINTS } from "../../utils/constants";
 import { TokenMetadata, TokenMetadataContent } from "../../types/arbitrum";
+import { API_ENDPOINTS } from "../../utils/constants";
 
-export default {
+export const getTokenMetadata: Action = {
     name: "GET_ARBITRUM_TOKEN_METADATA",
     similes: [
         "CHECK_ARBITRUM_TOKEN_INFO",
@@ -29,7 +29,7 @@ export default {
         return true;
     },
     description:
-        "Get token metadata including supply, FDV, and other details on Arbitrum blockchain",
+        "Get token metadata including supply, FDV, project links, and other details on Arbitrum blockchain. Use this if the user is asking for info about a token on Arbitrum, and is not a yield strategy.",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -57,27 +57,35 @@ export default {
             });
 
             elizaLogger.log("Extracting token address...");
-            const content = (await generateObjectDeprecated({
+            const content = (await generateText({
                 runtime,
                 context: metadataContext,
                 modelClass: ModelClass.LARGE,
             })) as unknown as TokenMetadataContent;
 
-            if (!content || typeof content !== "object") {
-                throw new Error("Invalid response format from model");
-            }
+            const parsedContent =
+                typeof content === "string" ? JSON.parse(content) : content;
 
-            if (!content.tokenAddress) {
-                throw new Error("No Arbitrum token address provided");
+            elizaLogger.log("Content:", parsedContent);
+            if (!parsedContent.tokenAddress) {
+                if (callback) {
+                    callback({
+                        text: "Please provide the token address for the Arbitrum token you'd like to check.",
+                        content: { error: "Missing token address" },
+                    });
+                }
+                return false;
             }
 
             const config = await validateMoralisConfig(runtime);
             elizaLogger.log(
-                `Fetching metadata for Arbitrum token ${content.tokenAddress}...`
+                `Fetching metadata for Arbitrum token ${parsedContent.tokenAddress}...`
             );
 
             const response = await axios.get<TokenMetadata>(
-                API_ENDPOINTS.ARBITRUM.TOKEN_METADATA(content.tokenAddress),
+                API_ENDPOINTS.ARBITRUM.TOKEN_METADATA(
+                    parsedContent.tokenAddress
+                ),
                 {
                     headers: {
                         "X-API-Key": config.MORALIS_API_KEY,
@@ -88,12 +96,22 @@ export default {
 
             const metadata = response.data;
             elizaLogger.success(
-                `Successfully fetched metadata for token ${content.tokenAddress}`
+                `Successfully fetched metadata for token ${parsedContent.tokenAddress}`
             );
+
+            if (!metadata.symbol) {
+                if (callback) {
+                    callback({
+                        text: `I couldn't find info for token ${parsedContent.tokenAddress}. Please provide the token address for the Arbitrum token you'd like to check.`,
+                        content: { error: "Missing token address" },
+                    });
+                }
+                return false;
+            }
 
             if (callback) {
                 const formattedText = [
-                    'Token Metadata:\n',
+                    "Token Metadata:\n",
                     `Name: ${metadata.name} (${metadata.symbol})`,
                     `Token Address: ${metadata.address}`,
                     `Total Supply: ${metadata.total_supply_formatted}`,
@@ -106,7 +124,7 @@ export default {
                     `Created At: ${metadata.created_at}`,
                     `Possible Spam: ${metadata.possible_spam}`,
                     `Verified Contract: ${metadata.verified_contract}`,
-                ].join('\n');
+                ].join("\n");
 
                 callback({
                     text: formattedText,
@@ -120,7 +138,14 @@ export default {
                 "Error in GET_ARBITRUM_TOKEN_METADATA handler:",
                 error
             );
-            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            if (axios.isAxiosError(error)) {
+                const errorMessage =
+                    error.response?.data?.message || error.message;
+                const statusCode = error.response?.status;
+                throw new Error(`API Error (${statusCode}): ${errorMessage}`);
+            }
             if (callback) {
                 callback({
                     text: `Error fetching Arbitrum token metadata: ${errorMessage}`,

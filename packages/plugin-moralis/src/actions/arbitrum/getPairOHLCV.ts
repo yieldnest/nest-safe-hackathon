@@ -16,7 +16,7 @@ import { API_ENDPOINTS } from "../../utils/constants";
 import { OHLCVParams, OHLCVResponse } from "../../types/solana";
 import { getPairOHLCVTemplateArbitrum } from "../../templates/pairOHLCV-arbitrum";
 
-export default {
+export const getPairOHLCV: Action = {
     name: "GET_ARBITRUM_PAIR_OHLCV",
     similes: [
         "FETCH_ARBITRUM_PAIR_HISTORY",
@@ -205,8 +205,12 @@ export default {
 
             return true;
         } catch (error: unknown) {
-            elizaLogger.error("Error in GET_ARBITRUM_PAIR_OHLCV handler:", error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
+            elizaLogger.error(
+                "Error in GET_ARBITRUM_PAIR_OHLCV handler:",
+                error
+            );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
             if (callback) {
                 callback({
                     text: `Error fetching Arbitrum pair OHLCV data: ${errorMessage}`,

@@ -1,4 +1,10 @@
-import { Action, HandlerCallback, IAgentRuntime, Memory, State } from "@elizaos/core";
+import {
+    Action,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
+    State,
+} from "@elizaos/core";
 import { validateMoralisConfig } from "../../environment";
 import { API_ENDPOINTS } from "../../utils/constants";
 import { PairsForTokenPaginated, TopGainer } from "../../types/arbitrum";
@@ -17,7 +23,8 @@ export const marketOverview: Action = {
         await validateMoralisConfig(runtime);
         return true;
     },
-    description: "Get market overview for Arbitrum blockchain",
+    description:
+        "Get market overview for Arbitrum blockchain. Use this if the user is asking for general market information related to arbitrum.",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -39,23 +46,33 @@ export const marketOverview: Action = {
             throw new Error("Failed to fetch top gainers");
         }
 
-        const topGainersData = await topGainers.json() as TopGainer[];
+        const topGainersData = (await topGainers.json()) as TopGainer[];
 
         const pairsPromises = topGainersData.map(async (gainer) => {
-            const pairsForToken = await fetch(API_ENDPOINTS.ARBITRUM.PAIRS_FOR_TOKEN(gainer.token_address), {
-                headers,
-            });
+            const pairsForToken = await fetch(
+                API_ENDPOINTS.ARBITRUM.PAIRS_FOR_TOKEN(gainer.token_address),
+                {
+                    headers,
+                }
+            );
             if (!pairsForToken.ok) {
                 return [];
             }
-            const pairsForTokenData = await pairsForToken.json() as PairsForTokenPaginated;
-            return await Promise.all(pairsForTokenData.pairs.filter((pair) => !pair.inactive_pair).map(async (pair) => ({
-                ...pair,
-                apr: await calculateAPR(pair),
-            })));
+            const pairsForTokenData =
+                (await pairsForToken.json()) as PairsForTokenPaginated;
+            return await Promise.all(
+                pairsForTokenData.pairs
+                    .filter((pair) => !pair.inactive_pair)
+                    .map(async (pair) => ({
+                        ...pair,
+                        apr: await calculateAPR(pair),
+                    }))
+            );
         });
 
-        const pairs = (await Promise.all(pairsPromises)).flatMap((pair) => pair);
+        const pairs = (await Promise.all(pairsPromises)).flatMap(
+            (pair) => pair
+        );
 
         const sortedPairs = pairs.sort((a, b) => b.apr - a.apr);
 
@@ -63,7 +80,7 @@ export const marketOverview: Action = {
             text: "Here are the top gainers for the Arbitrum blockchain:",
             content: {
                 pairs: sortedPairs,
-                topGainers: topGainersData
+                topGainers: topGainersData,
             },
         });
 
@@ -131,4 +148,4 @@ export const marketOverview: Action = {
             },
         ],
     ],
-}
+};

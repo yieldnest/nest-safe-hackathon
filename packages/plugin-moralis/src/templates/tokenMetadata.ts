@@ -16,16 +16,17 @@ Extract the Solana token address from the LAST message only and respond with a S
 
 export const getTokenMetadataTemplateArbitrum = `Given the most recent message only, extract the Arbitrum token address to fetch metadata for. This is specifically for Arbitrum blockchain only.
 
-Format the response as a single JSON object with:
-- tokenAddress: the Arbitrum token address (a hex string)
-
-Example:
-For "What's the FDV and total supply of 0x37a645648df29205c6261289983fb04ecd70b4b3?":
-\`\`\`json
-{
-  "tokenAddress": "0x37a645648df29205c6261289983fb04ecd70b4b3"
-}
-\`\`\`
+{{providers}}
 
 {{recentMessages}}
-Extract the Arbitrum token address from the LAST message only and respond with a SINGLE JSON object. If asking about tokens on other chains (like Solana), return null for tokenAddress.`;
+
+Only extract the token address from the most recent message in the conversation. Ignore any previous messages or historical requests.
+
+Return ONLY a JSON object in the exact format below, nothing else:
+{
+ "tokenAddress": "0x37a645648df29205c6261289983fb04ecd70b4b3"
+}
+
+Extract the Arbitrum token address from the most recent message. They may have given you a token symbol or name that you need to find in the message history to get the correct address from. If you can't find the address, return null for tokenAddress.
+Respond with a SINGLE JSON object.
+`;
