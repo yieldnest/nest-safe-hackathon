@@ -8,10 +8,9 @@ import {
 
 import Safe from '@safe-global/protocol-kit';
 import SafeAPIKitImport from '@safe-global/api-kit'
+import { transactionServiceConfig } from '../index.js';
 
 const SafeApiKit = SafeAPIKitImport.default
-
-const CHAIN_ID = 11155111n; // Sepolia
 
 export const executeTransactionAction: Action = {
   name: "EXECUTE_SAFE_TRANSACTION",
@@ -54,8 +53,8 @@ export const executeTransactionAction: Action = {
 
           // Initialize Safe API Kit
           const apiKit = new SafeApiKit({
-              chainId: CHAIN_ID,
-              txServiceUrl: 'https://safe-transaction-sepolia.safe.global/api'
+              chainId: transactionServiceConfig.chainId,
+              txServiceUrl: transactionServiceConfig.txServiceUrl
           });
 
           // Get pending transactions
@@ -86,10 +85,10 @@ export const executeTransactionAction: Action = {
 
           // Get the transaction details from the Safe Transaction Service
           const safeTransaction = await apiKit.getTransaction(readyToExecuteTx.safeTxHash);
-          console.log("safeTransaction", safeTransaction);
           // Execute the transaction
           const executeTxResponse = await safe.executeTransaction(safeTransaction);
 
+          console.log('executeTxResponse', executeTxResponse)
           const resultMessage = `Transaction executed successfully:
 Safe Transaction Hash: ${readyToExecuteTx.safeTxHash}
 Transaction Hash: ${executeTxResponse.hash}`;

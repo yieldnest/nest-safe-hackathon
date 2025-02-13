@@ -13,7 +13,7 @@ import { FundSafe } from './fund-safe.tsx';
 import { SafeDetails } from './safe-details.tsx';
 
 export function NestSidebar() {
-    const safeDetails = useSafeDetails();
+    const { safeDetails } = useSafeDetails();
 
     return (
         <Sidebar side="right" width="24rem">

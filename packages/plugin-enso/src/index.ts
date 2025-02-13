@@ -9,7 +9,9 @@ export const ensoPlugin: Plugin = {
     providers: [],
     evaluators: [],
     services: [],
-    actions: [routeSwapAction]
+    actions: [
+        routeSwapAction,
+    ]
 };
 
 export const pluginEnso = ensoPlugin;

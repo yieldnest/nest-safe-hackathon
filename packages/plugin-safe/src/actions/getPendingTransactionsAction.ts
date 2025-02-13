@@ -8,10 +8,8 @@ import {
 
 import SafeAPIKitImport from '@safe-global/api-kit';
 import { privateKeyToAccount } from 'viem/accounts';
-
+import { transactionServiceConfig } from '../index.js';
 const SafeApiKit = SafeAPIKitImport.default;
-
-const CHAIN_ID = 11155111n; // Sepolia
 
 export const getPendingTransactionsAction: Action = {
   name: "GET_PENDING_TRANSACTIONS",
@@ -55,14 +53,12 @@ export const getPendingTransactionsAction: Action = {
 
           // Initialize API Kit
           const apiKit = new SafeApiKit({
-              chainId: CHAIN_ID,
-              txServiceUrl: 'https://safe-transaction-sepolia.safe.global/api'
+              chainId: transactionServiceConfig.chainId,
+              txServiceUrl: transactionServiceConfig.txServiceUrl
           });
 
           // Get pending transactions
           const pendingTransactions = await apiKit.getPendingTransactions(safeAddress);
-
-          console.log('Pending transactions:', pendingTransactions);
 
           callback?.({
               text: `Found ${pendingTransactions.count} pending transactions for Safe ${safeAddress}`,
