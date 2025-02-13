@@ -27,13 +27,12 @@ type SafeToken = {
 
 export const useSafeTokens = () => {
     const { safeDetails } = useSafeDetails();
-    
+
     const { data, isLoading } = useQuery<SafeToken[]>({
         queryKey: ['safe-tokens', safeDetails?.address],
         queryFn: async () => {
             const data = await fetch(`/api/balance/${safeDetails?.address}/tokens?chain=arbitrum&exclude_spam=true`)
             const json = await data.json();
-            console.log(json.result);
             return json.result;
         },
     });

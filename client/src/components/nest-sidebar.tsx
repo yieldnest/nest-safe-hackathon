@@ -40,7 +40,7 @@ export function NestSidebar() {
         <Sidebar side="right" width="470px" className="bg-nest m-3 h-[calc(100svh-1.5rem)] rounded-sm border border-nest-light">
             <SidebarHeader className="py-5 px-3.5">
                 <span className="text-xl font-medium">
-                    Nest AI Accounts
+                    Nest AI Account
                 </span>
                 <NestHeaderActions />
                 <div className="border-b border-nest-light mt-2"/>
