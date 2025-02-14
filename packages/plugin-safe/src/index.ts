@@ -20,7 +20,7 @@ export const safePlugin: Plugin = {
     actions: [
         deployNewSafeAction,
         checkSafeAction,
-        // prepareTransactionAction,
+        prepareTransactionAction,
         // getPendingTransactionsAction,
         // executeTransactionAction,
     ],

@@ -17,9 +17,9 @@ import { transactionServiceConfig } from '../index.js';
 const SafeApiKit = SafeAPIKitImport.default
 
 export const prepareTransactionAction: Action = {
-  name: "PREPARE_SAFE_TRANSACTION",
-  description: "Prepares a Safe transaction and returns the transaction hash for user signing",
-  similes: ["prepare transaction", "create transaction", "setup transaction"],
+  name: "SIGN_TRANSACTION",
+  description: "Nest signs a Safe transaction and returns the transaction hash for user signing",
+  similes: ["prepare to sign", "create transaction", "setup transaction", "ready"],
   examples: [
       [
           {
@@ -112,54 +112,54 @@ export const prepareTransactionAction: Action = {
 
         // Get transaction hash
         const safeTxHash = await safe.getTransactionHash(safeTransaction);
-
+        console.log("safeTxHash", safeTxHash);
         // Check for existing pending transactions
-        const pendingTransactions = await apiKit.getPendingTransactions(safeAddress);
+        // const pendingTransactions = await apiKit.getPendingTransactions(safeAddress);
 
         // Check if an identical transaction is already in the pending queue
-        const duplicateTx = pendingTransactions.results.find(tx => 
-            tx.to.toLowerCase() === to.toLowerCase() &&
-            tx.value === value &&
-            tx.data === data &&
-            !tx.isExecuted &&
-            tx.confirmations?.some(conf => 
-                conf.owner.toLowerCase() === nestAccount.address.toLowerCase()
-            )
-        );
+        // const duplicateTx = pendingTransactions.results.find(tx => 
+        //     tx.to.toLowerCase() === to.toLowerCase() &&
+        //     tx.value === value &&
+        //     tx.data === data &&
+        //     !tx.isExecuted &&
+        //     tx.confirmations?.some(conf => 
+        //         conf.owner.toLowerCase() === nestAccount.address.toLowerCase()
+        //     )
+        // );
 
-        if (duplicateTx) {
-            console.log("duplicateTx found", duplicateTx);
-            callback?.({
-            text: `Found identical transaction already in queue.
-Transaction hash: ${duplicateTx.safeTxHash}`,
-            content: {
-                success: true,
-                safeTxHash: duplicateTx.safeTxHash,
-                safeAddress,
-                strategy: {
-                    name: strategyName,
-                    description: strategyDescription
-                },
-                transaction: {
-                    to: duplicateTx.to,
-                    value: duplicateTx.value,
-                    data: duplicateTx.data,
-                    operation: duplicateTx.operation,
-                    safeTxHash: duplicateTx.safeTxHash
-                },
-                signatures: {
-                    nest: duplicateTx.confirmations.find(conf => 
-                        conf.owner.toLowerCase() === nestAccount.address.toLowerCase()
-                    )?.signature
-                }
-            }
-            });
-            return true;
-        }
+//         if (duplicateTx) {
+//             console.log("duplicateTx found", duplicateTx);
+//             callback?.({
+//             text: `Found identical transaction already in queue.
+// Transaction hash: ${duplicateTx.safeTxHash}`,
+//             content: {
+//                 success: true,
+//                 safeTxHash: duplicateTx.safeTxHash,
+//                 safeAddress,
+//                 strategy: {
+//                     name: strategyName,
+//                     description: strategyDescription
+//                 },
+//                 transaction: {
+//                     to: duplicateTx.to,
+//                     value: duplicateTx.value,
+//                     data: duplicateTx.data,
+//                     operation: duplicateTx.operation,
+//                     safeTxHash: duplicateTx.safeTxHash
+//                 },
+//                 signatures: {
+//                     nest: duplicateTx.confirmations.find(conf => 
+//                         conf.owner.toLowerCase() === nestAccount.address.toLowerCase()
+//                     )?.signature
+//                 }
+//             }
+//             });
+//             return true;
+//         }
 
         // If no duplicate found, sign and propose the new transaction
         const nestSignature = await safe.signHash(safeTxHash);
-        //   console.log("Nest signature:", nestSignature);
+        console.log("Nest signature:", nestSignature);
 
         // try {
         //     console.log('safeAddress', safeAddress)

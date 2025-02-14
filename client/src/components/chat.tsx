@@ -237,7 +237,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
                 >
                     {transitions((style: any, message: ContentWithUser) => {
                         const variant = getMessageVariant(message?.user);
-                        console.log("Rendering message:", message);
+                        const contentData = message.content ? (message.content as { data: { tx?: Strategy } }) : null;
                         return (
                             <CustomAnimatedDiv
                                 style={{
@@ -338,9 +338,8 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                         </div>
                                     </div>
                                 </ChatBubble>
-                                {message.txInfo && (
-                                    console.log("Rendering StrategyCard with txInfo:", message.txInfo),
-                                    <StrategyCard strategy={message.txInfo as Strategy} />
+                                {contentData && contentData.data.tx && (
+                                    <StrategyCard strategy={contentData.data.tx} />
                                 )}
                             </CustomAnimatedDiv>
                         );

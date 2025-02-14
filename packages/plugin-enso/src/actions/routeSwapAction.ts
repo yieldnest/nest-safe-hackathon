@@ -32,7 +32,7 @@ export const routeSwapAction: Action = {
     name: "PREPARE_TOKEN_SWAP",
     description:
         "Sets up a token swap through Enso's API to find the best execution path. Use this if a user wants to send a transaction, swap tokens, transfer tokens, or deposit into a strategy.",
-    similes: ["swap tokens", "exchange tokens", "trade tokens"],
+    similes: ["swap tokens", "exchange tokens", "trade tokens", "propose", "suggest"],
     examples: [
         [
             {

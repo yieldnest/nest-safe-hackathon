@@ -12,14 +12,12 @@ import { arbitrum } from "viem/chains";
 import { useAccount } from "wagmi";
 
 interface Strategy {
-    name: string;
-    description: string;
+    data: string;
     to: string;
+    from: string;
     value: string;
-    data?: string;
-    tokenIn: string;
-    tokenOut: string;
-    amountIn: string;
+    operationType: number;
+    gas: string;
 }
 
 export function StrategyCard({ strategy }: { strategy: Strategy }) {
@@ -32,6 +30,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
     const { checkPendingTransaction } = useCheckPendingTransaction();
 
     const handlePrepareAndSign = async (strategy: Strategy) => {
+        console.log("Strategy:", strategy);
         if (!isConnected || !address) {
             toast({
                 title: "Wallet not connected",
@@ -57,145 +56,87 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             return;
         }
         try {
-            setLoading((prev) => ({ ...prev, [strategy.name]: true }));
+            setLoading((prev) => ({ ...prev, [strategy.from]: true }));
 
-            // Call the route swap action for the first strategy
-            const swapResponseData = await apiClient.executeAction(
-                "ROUTE_SWAP",
+            console.log("Preparing safe transaction with params:", {
+                safeAddress: strategy.from,
+                to: strategy.to,
+                value: strategy.value,
+                data: strategy.data,
+                gas: strategy.gas,
+                chainId: arbitrum.id,
+            });
+
+            const prepareResponseData = await apiClient.executeAction(
+                "SIGN_TRANSACTION",
                 {
-                    fromAddress: safeDetails?.address,
-                    receiver: safeDetails?.address,
-                    tokenIn: strategy.tokenIn,
-                    tokenOut: strategy.tokenOut,
-                    amountIn: strategy.amountIn,
+                    userAddress: address,
+                    safeAddress: strategy.from,
+                    to: strategy.to,
+                    value: strategy.value,
+                    data: strategy.data,
+                    gas: strategy.gas,
+                    operation: strategy.operationType,
                     chainId: arbitrum.id,
                 },
                 agent.id
             );
-            const swapResponse = swapResponseData.content.content;
 
-            const pendingTxResponseData = await apiClient.executeAction(
-                "GET_PENDING_TRANSACTIONS",
-                {
-                    safeAddress: safeDetails?.address,
-                },
-                agent.id
-            );
-            let pendingTxResponse = pendingTxResponseData.content.content;
+            const prepareResponse = prepareResponseData.content.content;
 
-            const txToSign = await checkPendingTransaction(
-                pendingTxResponse,
-                swapResponse
-            );
-
-            if (txToSign) {
-                console.log("Requesting signature for transaction:", txToSign);
-                await signAndExecute(
-                    txToSign,
-                    safeDetails?.address as `0x${string}`,
-                    address
-                );
-            } else {
-                console.log("Preparing safe transaction with params:", {
-                    safeAddress: safeDetails?.address,
-                    to: swapResponse.data.tx.to,
-                    value: swapResponse.data.tx.value,
-                    data: swapResponse.data.tx.data,
-                    gas: swapResponse.data.gas,
-                    chainId: arbitrum.id,
-                });
-
-                const prepareResponseData = await apiClient.executeAction(
-                    "PREPARE_SAFE_TRANSACTION",
-                    {
-                        safeAddress: safeDetails?.address,
-                        to: swapResponse.data.tx.to,
-                        value: swapResponse.data.tx.value,
-                        data: swapResponse.data.tx.data,
-                        gas: swapResponse.data.gas,
-                        operation: swapResponse.data.tx.operationType,
-                        chainId: arbitrum.id,
-                    },
-                    agent.id
-                );
-                const prepareResponse = prepareResponseData.content.content;
-
-                console.log("Prepare response:", prepareResponse);
-
-                if (!prepareResponse?.success) {
-                    throw new Error("Failed to prepare safe transaction");
-                }
-
-                // const pendingTxResponseData = await apiClient.executeAction("GET_PENDING_TRANSACTIONS", {
-                //     safeAddress: safeDetails?.address
-                // }, agent.id);
-                // pendingTxResponse = pendingTxResponseData.content.content;
-
-                // const txToSign = await checkPendingTransaction(pendingTxResponse, swapResponse);
-
-                const txToSign = {
-                    to: prepareResponse.transaction.to,
-                    value: prepareResponse.transaction.value,
-                    data: prepareResponse.transaction.data || "0x",
-                    operation: prepareResponse.transaction.operation,
-                    safeTxGas: prepareResponse.transaction.safeTxGas,
-                    baseGas: prepareResponse.transaction.baseGas,
-                    gasPrice: prepareResponse.transaction.gasPrice,
-                    gasToken: prepareResponse.transaction.gasToken,
-                    refundReceiver: prepareResponse.transaction.refundReceiver,
-                    nonce: prepareResponse.transaction.nonce,
-                    safeTxHash: prepareResponse.transaction.safeTxHash,
-                };
-
-                const nestSignature = prepareResponse.signatures.nest;
-                console.log("Requesting signature for transaction:", txToSign);
-                await signAndExecute(
-                    txToSign,
-                    safeDetails?.address as `0x${string}`,
-                    nestSignature
-                );
-
-                // await apiClient.executeAction("EXECUTE_SAFE_TRANSACTION", {
-                //     safeAddress: safeDetails?.address
-                // }, agent.id);
+            if (!prepareResponse?.success) {
+                throw new Error("Failed to prepare safe transaction");
             }
+
+            const txToSign = {
+                to: prepareResponse.transaction.to,
+                value: prepareResponse.transaction.value,
+                data: prepareResponse.transaction.data || "0x",
+                operation: prepareResponse.transaction.operation,
+                safeTxGas: prepareResponse.transaction.safeTxGas,
+                baseGas: prepareResponse.transaction.baseGas,
+                gasPrice: prepareResponse.transaction.gasPrice,
+                gasToken: prepareResponse.transaction.gasToken,
+                refundReceiver: prepareResponse.transaction.refundReceiver,
+                nonce: prepareResponse.transaction.nonce,
+                safeTxHash: prepareResponse.transaction.safeTxHash,
+            };
+
+            const nestSignature = prepareResponse.signatures.nest;
+            console.log("Requesting signature for transaction:", txToSign);
+            await signAndExecute(
+                txToSign,
+                safeDetails?.address as `0x${string}`,
+                nestSignature
+            );
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error in preparing and signing transaction:", error);
             toast({
                 title: "Error",
-                description:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to process transaction",
+                description: error instanceof Error ? error.message : "Failed to process transaction",
                 variant: "destructive",
             });
         } finally {
-            setLoading((prev) => ({ ...prev, [strategy.name]: false }));
+            setLoading((prev) => ({ ...prev, [strategy.from]: false }));
         }
     };
 
     return (
-        <div className="p-4">
-            <Card key={strategy.name}>
-                <CardContent className="flex flex-col gap-4 p-6">
-                    <div className="space-y-2">
-                        <h3 className="text-lg font-medium">{strategy.name}</h3>
-                    </div>
-                    <Button
-                        onClick={() => handlePrepareAndSign(strategy)}
-                        disabled={loading[strategy.name]}
-                    >
-                        {loading[strategy.name] ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            "Test Transaction"
-                        )}
-                    </Button>
-                </CardContent>
-            </Card>
+        <div className="p-4 ml-6 bg-nest rounded-sm">
+            <Button
+                onClick={() => handlePrepareAndSign(strategy)}
+                disabled={loading[strategy.from]}
+                className="bg-nest-gold"
+            >
+                {loading[strategy.from] ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                    </>
+                ) : (
+                    "Execute Transaction"
+                )}
+            </Button>
         </div>
     );
 }

@@ -3,6 +3,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useContractWrite, usePrepareContractWrite } from 'wagmi';
 import { safeAbi } from '../abi/safe.abi';
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { createPublicClient, http } from 'viem';
+import { arbitrum } from 'viem/chains';
 
 interface TxToSign {
   [key: string]: any;
@@ -22,6 +25,7 @@ interface TxToSign {
 export function useSignAndExecute() {
   const { signTypedDataAsync } = useSignTypedData();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [txArgs, setTxArgs] = useState<any>(null);
 
@@ -90,6 +94,26 @@ export function useSignAndExecute() {
         safeAddress,
         signature: combinedSignature,
       });
+
+      // Wait for transaction to be mined
+      const publicClient = createPublicClient({
+        chain: arbitrum,
+        transport: http(arbitrum.rpcUrls.default.http[0]),
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txToSign.safeTxHash as `0x${string}`,
+      });
+
+      if (Number(receipt.status) === 1) {
+        toast({
+          title: "Transaction Successful",
+          description: "The transaction was successfully executed.",
+        });
+
+        // Revalidate the correct query key
+        queryClient.invalidateQueries({ queryKey: 'safe-tokens' });
+      }
 
     } catch (error) {
       console.error("Error:", error);
