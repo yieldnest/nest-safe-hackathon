@@ -6,20 +6,87 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
 import { formatUnits } from "viem";
+import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
+import { useDefaultAgent } from "@/hooks/use-default-agent";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function NestHeaderActions() {
-    const { isConnected } = useAccount();
+    const { address, isConnected } = useAccount();
     const { safeDetails } = useSafeDetails();
     const { data: safeBalanceData } = useBalance({ address: safeDetails?.address as `0x${string}`, enabled: !!safeDetails?.address });
+    const { agent } = useDefaultAgent();
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    const { refetch: refetchSafeDetails } = useSafeDetails();
+
+    const handleCreateSafe = async () => {
+        if (!isConnected || !address) {
+            toast({
+                title: "Wallet not connected",
+                description: "Please connect your wallet first to create a Safe.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (!agent?.id) {
+            toast({
+                title: "Error",
+                description: "Agent not found",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            // Call the DEPLOY_NEW_SAFE_ACCOUNT action through the API
+            const response = await apiClient.executeAction("DEPLOY_NEW_SAFE_ACCOUNT", {
+                ownerAddress: address,
+            }, agent.id);
+
+            if (response.success) {
+                toast({
+                    title: "Safe Created!",
+                    description: `Your Safe wallet has been created at ${response.content?.safeAddress || response.safeAddress}`,
+                });
+                // Refetch safe details to update the component
+                refetchSafeDetails();
+            } else {
+                throw new Error(response.error || "Failed to create Safe");
+            }
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to create Safe",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     return (
         <div className="flex items-center gap-3 mt-4">
             {isConnected && !safeDetails && (
                 <button 
                     className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-nest border border-nest-gold text-white hover:bg-nest-light transition-colors"
+                    onClick={handleCreateSafe}  
                 >
-                    <FileText className="h-5 w-5 text-nest-gold" />
-                    <span className="text-sm text-nowrap">Create Nest Account</span>
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Account...
+                        </>
+                    ) : (
+                        <>
+                            <FileText className="h-5 w-5 text-nest-gold" />
+                            <span className="text-sm text-nowrap">Create Nest Account</span>
+                        </>
+                    )}
                 </button>
             )}
             {

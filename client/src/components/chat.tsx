@@ -338,7 +338,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                         </div>
                                     </div>
                                 </ChatBubble>
-                                {contentData && contentData.data.tx && (
+                                {contentData && contentData.data && contentData.data.tx && (
                                     <StrategyCard strategy={contentData.data.tx} />
                                 )}
                             </CustomAnimatedDiv>

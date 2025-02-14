@@ -28,6 +28,7 @@ export function useSignAndExecute() {
   const queryClient = useQueryClient();
 
   const [txArgs, setTxArgs] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   const { config } = usePrepareContractWrite({
     address: txArgs?.safeAddress,
@@ -58,6 +59,7 @@ export function useSignAndExecute() {
 
   const signAndExecute = async (txToSign: TxToSign, safeAddress: string, nestSignature: string) => {
     try {
+      setLoading(true);
       const signature = await signTypedDataAsync({
         domain: {
           chainId: 42161,
@@ -122,6 +124,8 @@ export function useSignAndExecute() {
         description: error instanceof Error ? error.message : "Failed to sign transaction",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
