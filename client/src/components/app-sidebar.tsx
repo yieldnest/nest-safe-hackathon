@@ -31,9 +31,15 @@ export function AppSidebar() {
                                     className="h-12 w-12"
                                 />
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-nest-gold text-sm">NEST AI</span>
-                                    <span className="text-xs text-gray-400">Banking-Grade Financial</span>
-                                    <span className="text-xs text-gray-400">Advice for DeFi Users</span>
+                                    <span className="font-bold text-nest-gold text-sm">
+                                        NEST AI
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                        Not Financial
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                        Advice for DeFi Users
+                                    </span>
                                 </div>
                             </NavLink>
                         </SidebarMenuButton>
@@ -41,7 +47,7 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <div className="border-b border-nest-border mx-4"/>
+            <div className="border-b border-nest-border mx-4" />
 
             {/* Main Navigation */}
             <SidebarContent className="px-0">
@@ -54,13 +60,18 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem className="relative">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-nest-gold rounded-r-md"/>
+                                <div className="absolute top-0 left-0 w-1 h-full bg-nest-gold rounded-r-md" />
                                 <NavLink to="/chat">
-                                    <SidebarMenuButton 
-                                        isActive={location.pathname.includes('/chat')}
+                                    <SidebarMenuButton
+                                        isActive={location.pathname.includes(
+                                            "/chat"
+                                        )}
                                         className="w-[90%] flex items-center gap-2 hover:bg-nest-light transition-colors pl-5 rounded-l-none"
                                     >
-                                        <img src="/funds-box.svg" className="h-4 w-4" />
+                                        <img
+                                            src="/funds-box.svg"
+                                            className="h-4 w-4"
+                                        />
                                         <span>Nest AI</span>
                                         <ChevronRight className="h-4 w-4 text-gray-400 ml-auto" />
                                     </SidebarMenuButton>
