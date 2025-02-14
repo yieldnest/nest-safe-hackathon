@@ -32,7 +32,7 @@ TASK: Analyze the transaction details and verify the following parameters are co
 - fromAddress is the user's safe address
 - receiver is the user's safe address
 - tokenIn is the token address the user wants to swap or sell
-- tokenOut is the token the user wants to buy or deposit into
+- tokenOut is the address of the token the user wants to buy or deposit into from the selected strategy
 - amountIn is the amount of tokenIn the user wants to swap or sell
 
 Respond with a JSON object indicating verification status.
@@ -69,8 +69,6 @@ async function handler(
 
     // Parse the verification result
     const verificationResult = parseJSONObjectFromText(response);
-
-    elizaLogger.log("Verification Result:", verificationResult);
 
     return verificationResult;
 }
