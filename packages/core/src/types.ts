@@ -550,6 +550,12 @@ export interface Account {
 
     /** Optional avatar URL */
     avatarUrl?: string;
+
+    /** Optional user address */
+    userAddress?: string;
+
+    /** Optional safe address */
+    safeAddress?: string;
 }
 
 /**
@@ -888,6 +894,22 @@ export interface IDatabaseAdapter {
 
     /** Create new account */
     createAccount(account: Account): Promise<boolean>;
+
+    updateAccount(account: Account): Promise<boolean>;
+
+    createOrUpdateUserAccount(
+        userAddress: string,
+        params: {
+            safeAddress?: string | null;
+            name?: string | null;
+            email?: string | null;
+            username?: string | null;
+            details?: Record<string, any>;
+        }
+    ): Promise<boolean>;
+
+    /** Get account by user address */
+    getAccountByUserAddress(userAddress: string): Promise<Account | null>;
 
     /** Get memories matching criteria */
     getMemories(params: {
@@ -1269,6 +1291,19 @@ export interface IAgentRuntime {
     ): Promise<State>;
 
     updateRecentMessageState(state: State): Promise<State>;
+
+    getUserAccount(userAddress: string): Promise<Account | null>;
+
+    createOrUpdateUserAccount(
+        userAddress: string,
+        params: {
+            safeAddress?: string | null;
+            name?: string | null;
+            email?: string | null;
+            username?: string | null;
+            details?: Record<string, any>;
+        }
+    ): Promise<boolean>;
 }
 
 export interface IImageDescriptionService extends Service {

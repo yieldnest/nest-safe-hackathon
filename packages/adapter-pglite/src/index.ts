@@ -18,6 +18,7 @@ import {
     RAGKnowledgeItem,
     elizaLogger,
     getEmbeddingConfig,
+    stringToUuid,
     type Goal,
     type IDatabaseCacheAdapter,
     type Memory,
@@ -251,14 +252,17 @@ export class PGLiteDatabaseAdapter
             try {
                 const accountId = account.id ?? v4();
                 await this.query(
-                    `INSERT INTO accounts (id, name, username, email, "avatarUrl", details)
-                    VALUES ($1, $2, $3, $4, $5, $6)`,
+                    // Changed from this.pool.query to this.query
+                    `INSERT INTO accounts (id, name, username, email, "avatarUrl", "userAddress", "safeAddress", details)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [
                         accountId,
                         account.name,
                         account.username || "",
                         account.email || "",
                         account.avatarUrl || "",
+                        account.userAddress || "",
+                        account.safeAddress || "",
                         JSON.stringify(account.details),
                     ]
                 );
@@ -271,11 +275,117 @@ export class PGLiteDatabaseAdapter
                     error:
                         error instanceof Error ? error.message : String(error),
                     accountId: account.id,
-                    name: account.name, // Only log non-sensitive fields
+                    name: account.name,
                 });
-                return false; // Return false instead of throwing to maintain existing behavior
+                return false;
             }
         }, "createAccount");
+    }
+
+    async updateAccount(account: Account): Promise<boolean> {
+        return this.withDatabase(async () => {
+            try {
+                await this.query(
+                    `UPDATE accounts 
+                  SET name = $2, 
+                      username = $3, 
+                      email = $4, 
+                      "avatarUrl" = $5,
+                      "userAddress" = $6,
+                      "safeAddress" = $7,
+                      details = $8
+                  WHERE id = $1`,
+                    [
+                        account.id,
+                        account.name,
+                        account.username || "",
+                        account.email || "",
+                        account.avatarUrl || "",
+                        account.userAddress || "",
+                        account.safeAddress || "",
+                        JSON.stringify(account.details),
+                    ]
+                );
+                elizaLogger.debug("Account updated successfully:", {
+                    accountId: account.id,
+                });
+                return true;
+            } catch (error) {
+                elizaLogger.error("Error updating account:", {
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                    accountId: account.id,
+                });
+                return false;
+            }
+        }, "updateAccount");
+    }
+
+    async createOrUpdateUserAccount(
+        userAddress: string,
+        params: {
+            safeAddress?: string | null;
+            name?: string | null;
+            email?: string | null;
+            username?: string | null;
+            details?: Record<string, any>;
+        }
+    ): Promise<boolean> {
+        return this.withDatabase(async () => {
+            const account = await this.getAccountByUserAddress(userAddress);
+            const accountId = stringToUuid(userAddress);
+
+            if (!account) {
+                return this.createAccount({
+                    id: accountId,
+                    name: params.name || userAddress,
+                    username: params.username || userAddress,
+                    email: params.email || "",
+                    userAddress: userAddress,
+                    safeAddress: params.safeAddress || "",
+                    details: params.details || { summary: "" },
+                });
+            } else {
+                return this.updateAccount({
+                    id: accountId,
+                    name: params.name || userAddress,
+                    username: params.username || "",
+                    email: params.email || "",
+                    userAddress: userAddress,
+                    safeAddress: params.safeAddress || "",
+                    details: params.details || { summary: "" },
+                });
+            }
+        }, "createOrUpdateUserAccount");
+    }
+
+    async getAccountByUserAddress(
+        userAddress: string
+    ): Promise<Account | null> {
+        return this.withDatabase(async () => {
+            const { rows } = await this.query<Account>(
+                'SELECT * FROM accounts WHERE "userAddress" = $1',
+                [userAddress]
+            );
+            if (rows.length === 0) {
+                elizaLogger.debug("Account not found:", { userAddress });
+                return null;
+            }
+
+            const account = rows[0];
+            elizaLogger.debug("Account retrieved:", {
+                userAddress,
+                hasDetails: !!account.details,
+            });
+
+            return {
+                ...account,
+                details:
+                    typeof account.details === "string"
+                        ? JSON.parse(account.details)
+                        : account.details,
+            };
+        }, "getAccountByUserAddress");
     }
 
     async getActorById(params: { roomId: UUID }): Promise<Actor[]> {
@@ -1051,7 +1161,8 @@ export class PGLiteDatabaseAdapter
             try {
                 await this.query(
                     `INSERT INTO participants (id, "userId", "roomId")
-                    VALUES ($1, $2, $3)`,
+                VALUES ($1, $2, $3)
+                ON CONFLICT ("userId", "roomId") DO NOTHING`, // Added this line
                     [v4(), userId, roomId]
                 );
                 return true;

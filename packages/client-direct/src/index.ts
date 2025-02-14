@@ -75,6 +75,12 @@ Recent Message History:
 Current Message to respond to:
 {{currentMessage}}
 
+User Address:
+{{userAddress}}
+
+User Account:
+{{userAccount}}
+
 # Response Directions and Task:
 
 1. Message Analysis:
@@ -439,11 +445,12 @@ export class DirectClient {
 
             try {
                 // 1) Retrieve the runtime, memory, etc. from jobData
-                const { runtime, memory } = jobData;
+                const { runtime, memory, userAddress } = jobData;
 
                 // 2) Generate response
                 let state = await runtime.composeState(memory, {
                     agentName: runtime.character.name,
+                    userAddress: userAddress,
                 });
 
                 const context = composeContext({
@@ -563,8 +570,8 @@ export class DirectClient {
                     const roomId = stringToUuid(
                         req.body.roomId ?? "default-room-" + agentId
                     );
-                    const userId = stringToUuid(req.body.userId ?? "user");
-
+                    const userId = stringToUuid(req.body.userAddress ?? "user");
+                    const userAddress = req.body.userAddress;
                     let runtime = this.agents.get(agentId);
                     // fallback: find by name
                     if (!runtime) {
@@ -580,12 +587,9 @@ export class DirectClient {
                     }
 
                     // Ensure connection
-                    await runtime.ensureConnection(
-                        userId,
-                        roomId,
-                        req.body.userName,
-                        req.body.name,
-                        "direct"
+                    await runtime.ensureParticipantInRoomByAddress(
+                        userAddress,
+                        roomId
                     );
 
                     // Extract text from request
@@ -638,6 +642,11 @@ export class DirectClient {
                         createdAt: Date.now(),
                     };
 
+                    await runtime.ensureParticipantInRoomByAddress(
+                        userAddress,
+                        roomId
+                    );
+
                     // Save or embed memory
                     await runtime.messageManager.addEmbeddingToMemory(memory);
                     await runtime.messageManager.createMemory(memory);
@@ -654,6 +663,7 @@ export class DirectClient {
                         userId,
                         roomId,
                         memory,
+                        userAddress,
                         text, // you could store other data as well
                         status: "pending",
                     };

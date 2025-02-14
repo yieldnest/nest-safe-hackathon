@@ -946,6 +946,80 @@ export class AgentRuntime implements IAgentRuntime {
         }
     }
 
+    async createUserAccount(
+        userAddress: string,
+        safeAddress: string | null,
+        _name: string | null,
+        _email?: string | null
+    ) {
+        const account =
+            await this.databaseAdapter.getAccountByUserAddress(userAddress);
+        if (!account) {
+            await this.databaseAdapter.createAccount({
+                id: stringToUuid(userAddress),
+                name: userAddress,
+                username: userAddress,
+                email: "",
+                userAddress: userAddress,
+                safeAddress: safeAddress,
+                details: { summary: "" },
+            });
+            elizaLogger.success(`User ${userAddress} created successfully.`);
+            return true;
+        }
+        return false;
+    }
+
+    async createOrUpdateUserAccount(
+        userAddress: string,
+        params: {
+            safeAddress?: string | null;
+            name?: string | null;
+            email?: string | null;
+            username?: string | null;
+            details?: Record<string, any>;
+        }
+    ) {
+        const account =
+            await this.databaseAdapter.getAccountByUserAddress(userAddress);
+        const accountId = stringToUuid(userAddress);
+
+        if (!account) {
+            // Create new account
+            await this.databaseAdapter.createAccount({
+                id: accountId,
+                name: params.name || userAddress,
+                username: params.username || userAddress,
+                email: params.email || "",
+                userAddress: userAddress,
+                safeAddress: params.safeAddress || null,
+                details: params.details || { summary: "" },
+            });
+            elizaLogger.success(`User ${userAddress} created successfully.`);
+            return true;
+        } else {
+            // Update existing account
+            await this.databaseAdapter.updateAccount({
+                id: accountId,
+                name: params.name || account.name,
+                username: params.username || account.username,
+                email: params.email || account.email,
+                userAddress: userAddress, // Keep original userAddress
+                safeAddress: params.safeAddress ?? account.safeAddress,
+                details: params.details || account.details,
+            });
+            elizaLogger.success(`User ${userAddress} updated successfully.`);
+            return true;
+        }
+    }
+
+    async getUserAccount(userAddress: string) {
+        const account =
+            await this.databaseAdapter.getAccountByUserAddress(userAddress);
+
+        return account;
+    }
+
     async ensureParticipantInRoom(userId: UUID, roomId: UUID) {
         const participants =
             await this.databaseAdapter.getParticipantsForRoom(roomId);
@@ -961,6 +1035,33 @@ export class AgentRuntime implements IAgentRuntime {
                 );
             }
         }
+    }
+
+    async ensureParticipantInRoomByAddress(userId: UUID, roomId: UUID) {
+        // First ensure the user account exists
+        const account =
+            await this.databaseAdapter.getAccountByUserAddress(userId);
+        if (!account) {
+            // Create the user account if it doesn't exist
+            const resAccountCreation = await this.createUserAccount(
+                userId,
+                null,
+                null
+            );
+            elizaLogger.log("CRETE NEW ACC RESONSE", resAccountCreation);
+            // Get the newly created account to get its UUID
+            const newAccount =
+                await this.databaseAdapter.getAccountByUserAddress(userId);
+            elizaLogger.log("newAccount", newAccount);
+            if (!newAccount) {
+                throw new Error("Failed to create user account");
+            }
+            // Add participant using the account's UUID
+            return this.databaseAdapter.addParticipant(newAccount.id, roomId);
+        }
+
+        // If account exists, add participant using the existing account's UUID
+        return this.databaseAdapter.addParticipant(account.id, roomId);
     }
 
     async ensureConnection(
@@ -1235,6 +1336,16 @@ Text: ${attachment.text}
                 .join(" ");
         }
 
+        const rawUserAccount =
+            await this.databaseAdapter.getAccountById(userId);
+
+        elizaLogger.log(
+            "userAccount in RUNTIME:",
+            JSON.stringify(rawUserAccount, null, 2)
+        );
+
+        const userAccount = JSON.stringify(rawUserAccount, null, 2);
+
         let knowledgeData = [];
         let formattedKnowledge = "";
 
@@ -1260,6 +1371,7 @@ Text: ${attachment.text}
         const initialState = {
             agentId: this.agentId,
             agentName,
+            userAccount,
             bio,
             lore,
             adjective:

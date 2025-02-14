@@ -146,7 +146,7 @@ export function createApiRouter(
     router.post("/agents/:agentId/action/:actionName", async (req, res) => {
         const { agentId, actionName } = req.params;
         const options = req.body;
-                
+
         const agent = agents.get(agentId);
         if (!agent) {
             console.error("[API] Agent not found:", agentId);
@@ -160,7 +160,7 @@ export function createApiRouter(
                 roomId: uuidv4() as UUID,
                 userId: uuidv4() as UUID,
                 agentId: agentId as UUID,
-                content: { text: "", action: actionName }
+                content: { text: "", action: actionName },
             };
 
             const state: State = {
@@ -175,7 +175,7 @@ export function createApiRouter(
                 roomId: uuidv4() as UUID,
                 actors: JSON.stringify([]),
                 recentMessages: JSON.stringify([actionMessage]),
-                recentMessagesData: [actionMessage]
+                recentMessagesData: [actionMessage],
             };
 
             let responseContent: Content | null = null;
@@ -192,15 +192,15 @@ export function createApiRouter(
                 options
             );
 
-            res.json({ 
-                success: true, 
-                content: responseContent 
+            res.json({
+                success: true,
+                content: responseContent,
             });
         } catch (error) {
             console.error("[API] Action execution failed:", error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: "Failed to execute action",
-                message: error.message 
+                message: error.message,
             });
         }
     });
