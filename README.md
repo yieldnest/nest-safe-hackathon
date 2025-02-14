@@ -38,12 +38,12 @@ At YieldNest, we constantly seek the best DeFi strategies, but keeping up is cha
 
 <p align="center">
   <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739548697/2025-02-14_22.56.05_pyznng.jpg" alt="Nest AI Demo 1" width="45%">  
-  <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739548697/2025-02-14_22.56.05_pyznng.jpg" alt="Nest AI Demo 2" width="45%">  
+  <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739550659/2025-02-14_23.30.33_fxxo1v.jpg" alt="Nest AI Demo 2" width="45%">  
 </p>
 
 <p align="center">
-  <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739548697/2025-02-14_22.56.05_pyznng.jpg" alt="Nest AI Demo 3" width="45%">  
-  <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739548697/2025-02-14_22.56.05_pyznng.jpg" alt="Nest AI Demo 4" width="45%">  
+  <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739550670/2025-02-14_23.30.40_jwsnk8.jpg" alt="Nest AI Demo 3" width="45%">  
+  <img src="https://res.cloudinary.com/dta0zgrgc/image/upload/v1739550766/2025-02-14_23.32.24_pcpvmc.jpg" alt="Nest AI Demo 4" width="45%">  
 </p>
 
 📸 **More images coming soon!**  
