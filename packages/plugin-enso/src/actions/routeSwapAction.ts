@@ -10,9 +10,11 @@ import {
     generateText,
     parseJSONObjectFromText,
 } from "@elizaos/core";
-import { parseEther, formatEther, formatGwei, type Address } from "viem";
+import { type Address, formatEther, formatGwei, parseEther } from "viem";
 import { arbitrum } from "viem/chains";
+import { verifyTxEvaluator } from "../evaluators/verifytx";
 import { extractTxInfoTemplate } from "../templates";
+import { type VerificationResult } from "../index";
 
 export const routeSwapAction: Action = {
     name: "ROUTE_SWAP",
@@ -44,22 +46,6 @@ export const routeSwapAction: Action = {
         callback?: HandlerCallback
     ): Promise<boolean> => {
         try {
-            // Get required parameters
-            // const fromAddress = options?.fromAddress as string;
-            // const tokenIn = options?.tokenIn as string;
-            // const tokenOut = options?.tokenOut as string;
-            // const amountIn = options?.amountIn as string;
-            // const chainId = options?.chainId || "42161";
-
-            // if (!fromAddress) {
-            //     throw new Error("fromAddress is required");
-            // }
-            // if (!tokenIn || !tokenOut || !amountIn) {
-            //     throw new Error(
-            //         "tokenIn, tokenOut, and amountIn are required parameters"
-            //     );
-            // }
-
             const apiKey = runtime.getSetting("ENSO_API_KEY");
             if (!apiKey) {
                 throw new Error("ENSO_API_KEY not found in environment");
@@ -135,13 +121,54 @@ export const routeSwapAction: Action = {
             data.tx.gas = data.gas;
             console.log("enso response", data);
 
+            // const verificationResult = await verifyTxEvaluator.handler(
+            //     runtime,
+            //     message,
+            //     state,
+            //     {
+            //         ...options,
+            //         resultData: data,
+            //     }
+            // );
+
+            // console.log("verificationResult", verificationResult);
+
+            // if (!(verificationResult as VerificationResult).isValid) {
+            //     elizaLogger.log("Transaction verification failed", {
+            //         mismatches: (verificationResult as VerificationResult)
+            //             .mismatches,
+            //     });
+
+            //     // The evaluator will have already reset the requestUrl in state
+            //     // callback?.({
+            //     //     text: `Some transaction details need confirmation. ${(
+            //     //         verificationResult as VerificationResult
+            //     //     ).mismatches?.join(". ")}`,
+            //     //     content: {
+            //     //         success: false,
+            //     //         mismatches: (verificationResult as VerificationResult)
+            //     //             .mismatches,
+            //     //         availableFields: (
+            //     //             verificationResult as VerificationResult
+            //     //         ).availableFields,
+            //     //         requiresRefetch: true,
+            //     //     },
+            //     // });
+            //     // return false;
+            // }
+
             // Format the response for the user
-            const resultMessage = `Quote received:
-From: ${tokenIn}
-To: ${tokenOut}
-Amount In: ${formatEther(amountIn).toString()}
+            const resultMessage = `Proposed Transaction:
+Token to sell: ${tokenIn}
+Token to Receive: ${tokenOut}
+From address: ${fromAddress}
+To address: ${receiver}
+Amount to transact: ${formatEther(amountIn).toString()}
 Estimated Amount Out: ${formatEther(data.amountOut).toString() || "Not available"}
-Gas Estimate: ${formatGwei(data.gas).toString() || "Not available"}`;
+Gas Estimate: ${formatGwei(data.gas).toString() || "Not available"}
+
+If you are ready to proceed, press the swap button to execute the transaction.
+`;
 
             callback?.({
                 text: resultMessage,

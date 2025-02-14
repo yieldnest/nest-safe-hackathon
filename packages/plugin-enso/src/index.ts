@@ -1,18 +1,22 @@
-import { type Plugin } from '@elizaos/core';
-import { routeSwapAction } from './actions/routeSwapAction';
+import { type Plugin } from "@elizaos/core";
+import { routeSwapAction } from "./actions/routeSwapAction";
+import { verifyTxEvaluator } from "./evaluators/verifytx";
 
-console.log("Initializing Enso Plugin...");
+export interface VerificationResult {
+    isValid: boolean;
+    mismatches?: string[];
+    availableFields?: Record<string, unknown>;
+    requiresRefetch?: boolean;
+}
 
 export const ensoPlugin: Plugin = {
-    name: 'Enso DeFi Integration',
-    description: 'Plugin for integrating Enso DeFi functionality',
+    name: "Enso DeFi Integration",
+    description: "Plugin for integrating Enso DeFi functionality",
     providers: [],
-    evaluators: [],
+    evaluators: [verifyTxEvaluator],
     services: [],
-    actions: [
-        routeSwapAction,
-    ]
+    actions: [routeSwapAction],
 };
 
 export const pluginEnso = ensoPlugin;
-export default ensoPlugin; 
+export default ensoPlugin;
