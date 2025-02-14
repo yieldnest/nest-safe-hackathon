@@ -528,6 +528,15 @@ export class DirectClient {
                 await runtime.evaluate(memory, state);
 
                 if (followUpMessage) {
+                    // TODO: Modify this to get the ENSO DATA object to add to the button.
+                    const followUpContent: Content = {
+                        text: followUpMessage.text,
+                        action: followUpMessage.action,
+                        txInfo: followUpMessage.txInfo,
+                        attachments: [],
+                        source: "direct",
+                        inReplyTo: memory.id, // Reference the original message
+                    };
                     const followUpMemory: Memory = {
                         id: stringToUuid(
                             Date.now().toString() + "-followup-" + jobId
@@ -535,7 +544,8 @@ export class DirectClient {
                         agentId: runtime.agentId,
                         userId: runtime.agentId,
                         roomId: memory.roomId,
-                        content: followUpMessage,
+                        content: followUpContent,
+
                         createdAt: Date.now(),
                     };
 
