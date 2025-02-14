@@ -24,6 +24,7 @@ import { Badge } from "./ui/badge";
 import ChatTtsButton from "./ui/chat/chat-tts-button";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { StrategyCard } from "./strategy-card";
 
 type ExtraContentFields = {
     user: string;
@@ -31,7 +32,9 @@ type ExtraContentFields = {
     isLoading?: boolean;
 };
 
-type ContentWithUser = Content & ExtraContentFields;
+type Strategy = any; 
+
+type ContentWithUser = Content & ExtraContentFields & { txInfo?: Strategy };
 
 type AnimatedDivProps = AnimatedProps<{ style: React.CSSProperties }> & {
     children?: React.ReactNode;
@@ -234,6 +237,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
                 >
                     {transitions((style: any, message: ContentWithUser) => {
                         const variant = getMessageVariant(message?.user);
+                        console.log("Rendering message:", message);
                         return (
                             <CustomAnimatedDiv
                                 style={{
@@ -334,6 +338,10 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                         </div>
                                     </div>
                                 </ChatBubble>
+                                {message.txInfo && (
+                                    console.log("Rendering StrategyCard with txInfo:", message.txInfo),
+                                    <StrategyCard strategy={message.txInfo as Strategy} />
+                                )}
                             </CustomAnimatedDiv>
                         );
                     })}

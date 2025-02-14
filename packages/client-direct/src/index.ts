@@ -105,7 +105,7 @@ User Account:
 
 4. Quality Controls:
 - Ensure the response aligns with {{agentName}}'s personality.
-- Confirm factual accuracy and only include relevant details; do **not** expand beyond the user’s request.
+- Confirm factual accuracy and only include relevant details; do **not** expand beyond the user's request.
 - **Avoid repeating previous responses verbatim** or summarizing them at length.
 - In the text, do not include the action name.
 - If time-related questions appear, provide the current system time.
@@ -113,10 +113,31 @@ User Account:
 
 5. Key requirements:
 - action: Only include if a specific action is needed.
-- text: Respond naturally in the character’s voice, directly addressing the request. **Do not add unrelated details.**
-- If an action is selected, inform the user you’re performing it and they should wait for the next message.
+- text: Respond naturally in the character's voice, directly addressing the request. **Do not add unrelated details.**
+- If an action is selected, inform the user you're performing it and they should wait for the next message.
 
   ` + messageCompletionFooter;
+
+interface FollowUpMessageData {
+    tx?: {
+        data: string;
+        to: string;
+        from: string;
+        value: string;
+        operationType: number;
+        gas: string;
+    };
+}
+
+interface FollowUpMessage {
+    text: string;
+    action: string;
+    content: {
+        data: {
+            tx?: FollowUpMessageData;
+        };
+    };
+}
 
 export class DirectClient {
     public app: express.Application;
@@ -514,7 +535,7 @@ export class DirectClient {
                 // 5) Process actions and handle follow-up
                 state = await runtime.updateRecentMessageState(state);
 
-                let followUpMessage: Content | null = null;
+                let followUpMessage: FollowUpMessage | null = null;
                 await runtime.processActions(
                     memory,
                     [responseMessage],
@@ -528,11 +549,12 @@ export class DirectClient {
                 await runtime.evaluate(memory, state);
 
                 if (followUpMessage) {
-                    // TODO: Modify this to get the ENSO DATA object to add to the button.
+                    const data = followUpMessage.content.data || {};
+                    console.log("data in DIRECT CLIENT", data);
                     const followUpContent: Content = {
                         text: followUpMessage.text,
                         action: followUpMessage.action,
-                        txInfo: followUpMessage.txInfo,
+                        txInfo: data.tx ? data.tx : undefined,
                         attachments: [],
                         source: "direct",
                         inReplyTo: memory.id, // Reference the original message
@@ -545,7 +567,6 @@ export class DirectClient {
                         userId: runtime.agentId,
                         roomId: memory.roomId,
                         content: followUpContent,
-
                         createdAt: Date.now(),
                     };
 
