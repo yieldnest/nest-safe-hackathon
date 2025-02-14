@@ -535,7 +535,7 @@ export class DirectClient {
                 // 5) Process actions and handle follow-up
                 state = await runtime.updateRecentMessageState(state);
 
-                let followUpMessage: FollowUpMessage | null = null;
+                let followUpMessage: Content | null = null;
                 await runtime.processActions(
                     memory,
                     [responseMessage],
@@ -549,16 +549,6 @@ export class DirectClient {
                 await runtime.evaluate(memory, state);
 
                 if (followUpMessage) {
-                    const data = followUpMessage.content.data || {};
-                    console.log("data in DIRECT CLIENT", data);
-                    const followUpContent: Content = {
-                        text: followUpMessage.text,
-                        action: followUpMessage.action,
-                        txInfo: data.tx ? data.tx : undefined,
-                        attachments: [],
-                        source: "direct",
-                        inReplyTo: memory.id, // Reference the original message
-                    };
                     const followUpMemory: Memory = {
                         id: stringToUuid(
                             Date.now().toString() + "-followup-" + jobId
@@ -566,7 +556,7 @@ export class DirectClient {
                         agentId: runtime.agentId,
                         userId: runtime.agentId,
                         roomId: memory.roomId,
-                        content: followUpContent,
+                        content: followUpMessage,
                         createdAt: Date.now(),
                     };
 
