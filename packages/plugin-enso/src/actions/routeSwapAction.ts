@@ -10,11 +10,22 @@ import {
     generateText,
     parseJSONObjectFromText,
 } from "@elizaos/core";
-import { type Address, formatEther, formatGwei, parseEther } from "viem";
+import {
+    type Address,
+    createPublicClient,
+    erc20Abi,
+    formatEther,
+    formatGwei,
+    formatUnits,
+    http,
+    parseEther,
+} from "viem";
 import { arbitrum } from "viem/chains";
 import { verifyTxEvaluator } from "../evaluators/verifytx";
-import { extractTxInfoTemplate } from "../templates";
 import { type VerificationResult } from "../index";
+import { extractTxInfoTemplate } from "../templates";
+
+const ETH_ADDRESS = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
 export const routeSwapAction: Action = {
     name: "PREPARE_TOKEN_SWAP",
@@ -49,6 +60,10 @@ export const routeSwapAction: Action = {
             const apiKey = runtime.getSetting("ENSO_API_KEY");
             if (!apiKey) {
                 throw new Error("ENSO_API_KEY not found in environment");
+            }
+            const rpcUrl = runtime.getSetting("EVM_PROVIDER_URL");
+            if (!rpcUrl) {
+                throw new Error("EVM_PROVIDER_URL not found in environment");
             }
 
             const state = await runtime.composeState(message);
@@ -133,29 +148,60 @@ export const routeSwapAction: Action = {
 
             console.log("verificationResult", verificationResult);
 
-            // if (!(verificationResult as VerificationResult).isValid) {
-            //     elizaLogger.log("Transaction verification failed", {
-            //         mismatches: (verificationResult as VerificationResult)
-            //             .mismatches,
-            //     });
+            if (!(verificationResult as VerificationResult).isValid) {
+                const transactionDetails = `
+              Transaction Details to Verify:
+              - From Address: ${parsedResponse.fromAddress}
+              - To Address: ${parsedResponse.receiver}
+              - Amount to Send: ${parsedResponse.amountIn}
+              - Token to Sell: ${parsedResponse.tokenIn}
+              - Token to Receive: ${parsedResponse.tokenOut}
+              - Network: ${parsedResponse.network}`;
 
-            //     // The evaluator will have already reset the requestUrl in state
-            //     // callback?.({
-            //     //     text: `Some transaction details need confirmation. ${(
-            //     //         verificationResult as VerificationResult
-            //     //     ).mismatches?.join(". ")}`,
-            //     //     content: {
-            //     //         success: false,
-            //     //         mismatches: (verificationResult as VerificationResult)
-            //     //             .mismatches,
-            //     //         availableFields: (
-            //     //             verificationResult as VerificationResult
-            //     //         ).availableFields,
-            //     //         requiresRefetch: true,
-            //     //     },
-            //     // });
-            //     // return false;
-            // }
+                callback?.({
+                    text: `Please verify these transaction details and let me know if anything needs to be corrected:\n${transactionDetails}\n\nIf any information is incorrect, please provide the correct details and I'll update the transaction accordingly.`,
+
+                    content: {
+                        success: false,
+                        mismatches: (verificationResult as VerificationResult)
+                            .mismatches,
+                        availableFields: (
+                            verificationResult as VerificationResult
+                        ).availableFields,
+                        requiresRefetch: true,
+                        currentValues: {
+                            fromAddress,
+                            receiver,
+                        },
+                    },
+                });
+                return false;
+            }
+
+            const publicClient = createPublicClient({
+                chain: arbitrum,
+                transport: http(rpcUrl),
+            });
+
+            // Get decimals for input token
+            const getTokenDecimals = async (
+                tokenAddress: Address
+            ): Promise<number> => {
+                if (tokenAddress.toLowerCase() === ETH_ADDRESS) {
+                    return 18;
+                }
+                return publicClient.readContract({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: "decimals",
+                });
+            };
+
+            const tokenInDecimals = await getTokenDecimals(tokenIn);
+            elizaLogger.log("tokenInDecimals", tokenInDecimals);
+
+            const tokenOutDecimals = await getTokenDecimals(tokenOut);
+            elizaLogger.log("tokenOutDecimals", tokenOutDecimals);
 
             // Format the response for the user
             const resultMessage = `Proposed Transaction:
@@ -163,8 +209,8 @@ Token to sell: ${tokenIn}
 Token to Receive: ${tokenOut}
 From address: ${fromAddress}
 To address: ${receiver}
-Amount to transact: ${formatEther(amountIn).toString()}
-Estimated Amount Out: ${formatEther(data.amountOut).toString() || "Not available"}
+Amount to transact: ${formatUnits(amountIn, tokenInDecimals).toString()}
+Estimated Amount Out: ${formatUnits(data.amountOut, tokenOutDecimals).toString() || "Not available"}
 Gas Estimate: ${formatGwei(data.gas).toString() || "Not available"}
 
 If you are ready to proceed, press the swap button to execute the transaction.
