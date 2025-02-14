@@ -166,47 +166,47 @@ export const routeSwapAction: Action = {
             data.tx.gas = data.gas;
             console.log("enso response", data);
 
-            const verificationResult = await verifyTxEvaluator.handler(
-                runtime,
-                message,
-                state,
-                {
-                    ...options,
-                    resultData: data,
-                }
-            );
+            // const verificationResult = await verifyTxEvaluator.handler(
+            //     runtime,
+            //     message,
+            //     state,
+            //     {
+            //         ...options,
+            //         resultData: data,
+            //     }
+            // );
 
-            console.log("verificationResult", verificationResult);
+            // console.log("verificationResult", verificationResult);
 
-            if (!(verificationResult as VerificationResult).isValid) {
-                const transactionDetails = `
-              Transaction Details to Verify:
-              - From Address: ${parsedResponse.fromAddress}
-              - To Address: ${parsedResponse.receiver}
-              - Amount to Send: ${parsedResponse.amountIn}
-              - Token to Sell: ${parsedResponse.tokenIn}
-              - Token to Receive: ${parsedResponse.tokenOut}
-              - Network: ${parsedResponse.network}`;
+            // if (!(verificationResult as VerificationResult).isValid) {
+            //     const transactionDetails = `
+            //   Transaction Details to Verify:
+            //   - From Address: ${parsedResponse.fromAddress}
+            //   - To Address: ${parsedResponse.receiver}
+            //   - Amount to Send: ${parsedResponse.amountIn}
+            //   - Token to Sell: ${parsedResponse.tokenIn}
+            //   - Token to Receive: ${parsedResponse.tokenOut}
+            //   - Network: ${parsedResponse.network}`;
 
-                callback?.({
-                    text: `Please verify these transaction details and let me know if anything needs to be corrected:\n${transactionDetails}\n\nIf any information is incorrect, please provide the correct details and I'll update the transaction accordingly.`,
+            //     callback?.({
+            //         text: `Please verify these transaction details and let me know if anything needs to be corrected:\n${transactionDetails}\n\nIf any information is incorrect, please provide the correct details and I'll update the transaction accordingly.`,
 
-                    content: {
-                        success: false,
-                        mismatches: (verificationResult as VerificationResult)
-                            .mismatches,
-                        availableFields: (
-                            verificationResult as VerificationResult
-                        ).availableFields,
-                        requiresRefetch: true,
-                        currentValues: {
-                            fromAddress,
-                            receiver,
-                        },
-                    },
-                });
-                return false;
-            }
+            //         content: {
+            //             success: false,
+            //             mismatches: (verificationResult as VerificationResult)
+            //                 .mismatches,
+            //             availableFields: (
+            //                 verificationResult as VerificationResult
+            //             ).availableFields,
+            //             requiresRefetch: true,
+            //             currentValues: {
+            //                 fromAddress,
+            //                 receiver,
+            //             },
+            //         },
+            //     });
+            //     return false;
+            // }
 
             // Format the response for the user
             const resultMessage = `Proposed Transaction:
