@@ -19,7 +19,8 @@
         "dist"
     ],
     "dependencies": {
-        "@elizaos/core": "workspace:*"
+        "@elizaos/core": "workspace:*",
+        "viem": "2.21.58"
     },
     "devDependencies": {
         "tsup": "^7.0.0",
@@ -28,4 +29,4 @@
     "scripts": {
         "build": "tsup --format esm --dts"
     }
-} 
+}
