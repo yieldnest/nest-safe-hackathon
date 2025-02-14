@@ -19,6 +19,7 @@ import {
     formatUnits,
     http,
     parseEther,
+    parseUnits,
 } from "viem";
 import { arbitrum } from "viem/chains";
 import { verifyTxEvaluator } from "../evaluators/verifytx";
@@ -66,6 +67,25 @@ export const routeSwapAction: Action = {
                 throw new Error("EVM_PROVIDER_URL not found in environment");
             }
 
+            const publicClient = createPublicClient({
+                chain: arbitrum,
+                transport: http(rpcUrl),
+            });
+
+            // Get decimals for input token
+            const getTokenDecimals = async (
+                tokenAddress: Address
+            ): Promise<number> => {
+                if (tokenAddress.toLowerCase() === ETH_ADDRESS) {
+                    return 18;
+                }
+                return publicClient.readContract({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: "decimals",
+                });
+            };
+
             const state = await runtime.composeState(message);
 
             const context = await composeContext({
@@ -100,7 +120,17 @@ export const routeSwapAction: Action = {
             const fromAddress = parsedResponse.fromAddress as Address;
             const tokenIn = parsedResponse.tokenIn as Address;
             const tokenOut = parsedResponse.tokenOut as Address;
-            const amountIn = parseEther(parsedResponse.amountIn);
+
+            const tokenInDecimals = await getTokenDecimals(tokenIn);
+            elizaLogger.log("tokenInDecimals", tokenInDecimals);
+
+            const tokenOutDecimals = await getTokenDecimals(tokenOut);
+            elizaLogger.log("tokenOutDecimals", tokenOutDecimals);
+
+            const amountIn = parseUnits(
+                parsedResponse.amountIn,
+                tokenInDecimals
+            );
             const spender = parsedResponse.fromAddress as Address;
             const receiver = parsedResponse.receiver
                 ? (parsedResponse.receiver as Address)
@@ -177,31 +207,6 @@ export const routeSwapAction: Action = {
                 });
                 return false;
             }
-
-            const publicClient = createPublicClient({
-                chain: arbitrum,
-                transport: http(rpcUrl),
-            });
-
-            // Get decimals for input token
-            const getTokenDecimals = async (
-                tokenAddress: Address
-            ): Promise<number> => {
-                if (tokenAddress.toLowerCase() === ETH_ADDRESS) {
-                    return 18;
-                }
-                return publicClient.readContract({
-                    address: tokenAddress,
-                    abi: erc20Abi,
-                    functionName: "decimals",
-                });
-            };
-
-            const tokenInDecimals = await getTokenDecimals(tokenIn);
-            elizaLogger.log("tokenInDecimals", tokenInDecimals);
-
-            const tokenOutDecimals = await getTokenDecimals(tokenOut);
-            elizaLogger.log("tokenOutDecimals", tokenOutDecimals);
 
             // Format the response for the user
             const resultMessage = `Proposed Transaction:
