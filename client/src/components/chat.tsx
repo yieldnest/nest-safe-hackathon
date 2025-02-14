@@ -92,57 +92,65 @@ export default function Page({ agentId }: { agentId: UUID }) {
             return apiClient.startConversation(agentId, message, userAddress);
         },
         onSuccess: (jobId: string) => {
-            apiClient.startSse(agentId, jobId, (content) => {
-                // Set flag for first response
-                if (!firstResponseReceived) {
-                    setFirstResponseReceived(true);
-                }
-
-                if (content.type === "complete") {
-                    // Ensure we remove the loading message
-                    queryClient.setQueryData<ContentWithUser[]>(
-                        ["messages", agentId],
-                        (old = []) => old.filter((msg) => !msg.isLoading)
-                    );
-                    // Force a re-render to ensure UI updates
-                    queryClient.invalidateQueries({
-                        queryKey: ["messages", agentId],
-                        exact: true,
-                    });
-                    return;
-                }
-
-                queryClient.setQueryData<ContentWithUser[]>(
-                    ["messages", agentId],
-                    (old = []) => {
-                        // Keep all messages except loading ones
-                        const messages = old.filter((msg) => !msg.isLoading);
-
-                        const newMessages = [
-                            ...messages,
-                            {
-                                ...content,
-                                createdAt: Date.now(),
-                                user: content.user || "system",
-                            },
-                        ];
-
-                        // Only add loading message if not complete
-                        if (content.type !== "complete") {
-                            newMessages.push({
-                                text: "",
-                                user: "system",
-                                isLoading: true,
-                                createdAt: Date.now() + 1,
-                                action: "",
-                                source: "",
-                                attachments: [],
-                            });
-                        }
-
-                        return newMessages;
+            let timeoutId: NodeJS.Timeout;
+            const contents: ContentWithUser[] = [];
+            apiClient.startSse(agentId, jobId, (contentStream) => {
+                clearTimeout(timeoutId);
+                contents.push(contentStream);
+                timeoutId = setTimeout(() => {
+                    // set first response received to true if it's the first message
+                    if (!firstResponseReceived) {
+                        setFirstResponseReceived(true);
                     }
-                );
+
+                    for (const content of contents) {
+                        if (content.type === "complete") {
+                            // Ensure we remove the loading message
+                            queryClient.setQueryData<ContentWithUser[]>(
+                                ["messages", agentId],
+                                (old = []) => old.filter((msg) => !msg.isLoading)
+                            );
+                            // Force a re-render to ensure UI updates
+                            queryClient.invalidateQueries({
+                                queryKey: ["messages", agentId],
+                                exact: true,
+                            });
+                            return;
+                        }
+        
+                        queryClient.setQueryData<ContentWithUser[]>(
+                            ["messages", agentId],
+                            (old = []) => {
+                                // Keep all messages except loading ones
+                                const messages = old.filter((msg) => !msg.isLoading);
+        
+                                const newMessages = [
+                                    ...messages,
+                                    {
+                                        ...content,
+                                        createdAt: Date.now(),
+                                        user: content.user || "system",
+                                    },
+                                ];
+        
+                                // Only add loading message if not complete
+                                if (content.type !== "complete") {
+                                    newMessages.push({
+                                        text: "",
+                                        user: "system",
+                                        isLoading: true,
+                                        createdAt: Date.now() + 1,
+                                        action: "",
+                                        source: "",
+                                        attachments: [],
+                                    });
+                                }
+        
+                                return newMessages;
+                            }
+                        );
+                    }
+                }, 100);                
             });
         },
         onError: (err: any) => {
