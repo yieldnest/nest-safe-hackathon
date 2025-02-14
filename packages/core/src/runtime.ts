@@ -1339,11 +1339,6 @@ Text: ${attachment.text}
         const rawUserAccount =
             await this.databaseAdapter.getAccountById(userId);
 
-        elizaLogger.log(
-            "userAccount in RUNTIME:",
-            JSON.stringify(rawUserAccount, null, 2)
-        );
-
         const userAccount = JSON.stringify(rawUserAccount, null, 2);
 
         let knowledgeData = [];
