@@ -41,5 +41,20 @@ export default defineConfig(({ mode }: ConfigEnv) => {
                 "@": "/src",
             },
         },
+        server: {
+            proxy: {
+                "/api/balance": {
+                    target: "https://deep-index.moralis.io/api/v2.2/wallets",
+                    changeOrigin: true,
+                    rewrite: (path) => {
+                        console.log(path);
+                        return path.replace(/^\/api\/balance/, "")
+                    },
+                    headers: {
+                        'X-API-Key': env.MORALIS_API_KEY,
+                    },
+                },
+            },
+        },
     };
 });

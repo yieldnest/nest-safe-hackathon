@@ -29,7 +29,9 @@ export function ConnectButton() {
                         {(() => {
                             if (!connected) {
                                 return (
-                                    <Button onClick={openConnectModal}>
+                                    <Button onClick={openConnectModal} className="
+                                        w-full border border-white bg-nest-light text-white rounded hover:bg-nest-gold hover:text-nest-light
+                                    ">
                                         Connect Wallet
                                     </Button>
                                 );
@@ -44,34 +46,11 @@ export function ConnectButton() {
                             }
 
                             return (
-                                <div className="flex gap-3">
-                                    <Button
-                                        onClick={openChainModal}
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                    >
-                                        {chain.hasIcon && (
-                                            <div className="w-4 h-4">
-                                                {chain.iconUrl && (
-                                                    <img
-                                                        alt={chain.name ?? 'Chain icon'}
-                                                        src={chain.iconUrl}
-                                                        className="w-4 h-4"
-                                                    />
-                                                )}
-                                            </div>
-                                        )}
-                                        {chain.name}
-                                    </Button>
-
-                                    <Button
-                                        onClick={openAccountModal}
-                                        variant="outline"
-                                    >
-                                        {account.displayName}
-                                        {account.displayBalance ? ` (${account.displayBalance})` : ''}
-                                    </Button>
-                                </div>
+                                <Button onClick={openAccountModal} className="
+                                    w-full border border-white bg-nest-light text-white rounded hover:bg-nest-gold hover:text-nest-light
+                                ">
+                                    {account.displayName}
+                                </Button>
                             );
                         })()}
                     </div>

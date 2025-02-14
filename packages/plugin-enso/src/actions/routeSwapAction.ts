@@ -69,6 +69,7 @@ export const routeSwapAction: Action = {
             }
             const data = await response.json();
 
+            data.tx.gas = data.gas;
             console.log('enso response', data)
 
             // Format the response for the user

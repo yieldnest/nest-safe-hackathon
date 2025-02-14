@@ -30,7 +30,7 @@ export default function ConnectionStatus() {
         <SidebarMenuItem>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className="w-full flex items-center justify-center rounded">
                         <div className="flex flex-col gap-1 select-none transition-all duration-200">
                             <div className="flex items-center gap-1">
                                 <div
