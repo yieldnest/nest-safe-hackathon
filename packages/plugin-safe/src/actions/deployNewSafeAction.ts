@@ -6,21 +6,22 @@ import {
     type IAgentRuntime,
     type Memory,
     type State,
-} from '@elizaos/core';
+    elizaLogger,
+} from "@elizaos/core";
 
 import Safe, {
     PredictedSafeProps,
     SafeAccountConfig,
-    SafeDeploymentConfig,
-} from '@safe-global/protocol-kit';
+} from "@safe-global/protocol-kit";
 
-import { arbitrum } from 'viem/chains';
-import { createPublicClient, http, formatUnits } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+import { createPublicClient, formatUnits, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { arbitrum } from "viem/chains";
 
 export const deployNewSafeAction: Action = {
     name: "DEPLOY_NEW_SAFE_ACCOUNT",
-    description: "Deploys a new Safe smart account with both the user and Nest as owners, requiring both signatures for transactions.",
+    description:
+        "Deploys a new Safe smart account with both the user and Nest as owners, requiring both signatures for transactions.",
     similes: ["deploy safe", "launch safe account", "execute safe deployment"],
     examples: [
         [
@@ -39,11 +40,14 @@ export const deployNewSafeAction: Action = {
         callback?: HandlerCallback
     ): Promise<boolean> => {
         try {
+            elizaLogger.log("MESSAGE IN DEPLOY SAFE", message);
             // Get Nest's private key from environment
             const nestPrivateKey = runtime.getSetting("EVM_PRIVATE_KEY");
             const rpcUrl = runtime.getSetting("EVM_PROVIDER_URL");
             if (!nestPrivateKey || !rpcUrl) {
-                throw new Error("Missing EVM_PRIVATE_KEY or EVM_PROVIDER_URL for Nest");
+                throw new Error(
+                    "Missing EVM_PRIVATE_KEY or EVM_PROVIDER_URL for Nest"
+                );
             }
 
             // Get user's wallet address from options
@@ -53,10 +57,12 @@ export const deployNewSafeAction: Action = {
             }
 
             // Format Nest's private key and derive address
-            const formattedPrivateKey = nestPrivateKey.startsWith('0x')
+            const formattedPrivateKey = nestPrivateKey.startsWith("0x")
                 ? nestPrivateKey
                 : `0x${nestPrivateKey}`;
-            const nestAccount = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
+            const nestAccount = privateKeyToAccount(
+                formattedPrivateKey as `0x${string}`
+            );
             const nestAddress = nestAccount.address;
 
             // Create a public client to fetch and log the account balance
@@ -65,8 +71,8 @@ export const deployNewSafeAction: Action = {
                 transport: http(rpcUrl),
             });
 
-            const balance = await publicClient.getBalance({ 
-                address: nestAddress
+            const balance = await publicClient.getBalance({
+                address: nestAddress,
             });
 
             const formattedBalance = formatUnits(balance, 18);
@@ -90,29 +96,32 @@ export const deployNewSafeAction: Action = {
 
             // Initialize the Protocol Kit
             const protocolKit = await (Safe as any).init({
-              provider: rpcUrl,
+                provider: rpcUrl,
                 signer: formattedPrivateKey,
                 predictedSafe,
                 isL1SafeSingleton: true,
             });
 
             // Create the deployment transaction
-            const deploymentTransaction = await protocolKit.createSafeDeploymentTransaction();
+            const deploymentTransaction =
+                await protocolKit.createSafeDeploymentTransaction();
 
             // Get the external signer for deployment
-            const externalSigner = await protocolKit.getSafeProvider().getExternalSigner();
+            const externalSigner = await protocolKit
+                .getSafeProvider()
+                .getExternalSigner();
 
             // Execute the deployment transaction
             const txHash = await externalSigner.sendTransaction({
                 to: deploymentTransaction.to,
-                value: BigInt(deploymentTransaction.value || '0'),
+                value: BigInt(deploymentTransaction.value || "0"),
                 data: deploymentTransaction.data as `0x${string}`,
                 chain: arbitrum,
             });
 
             // Wait for the transaction receipt
             const receipt = await publicClient.waitForTransactionReceipt({
-                hash: txHash as `0x${string}`
+                hash: txHash as `0x${string}`,
             });
 
             // Get the Safe address
@@ -127,12 +136,12 @@ export const deployNewSafeAction: Action = {
             const safeThreshold = await newProtocolKit.getThreshold();
 
             const resultMessage = `Safe smart account deployed successfully.
-Transaction hash: ${txHash}
-Safe address: ${deployedSafeAddress}
-Is Safe deployed: ${isSafeDeployed}
-Owners: ${safeOwners.join(', ')}
-Threshold: ${safeThreshold.toString()}
-Nest balance: ${formattedBalance} ETH`;
+            Transaction hash: ${txHash}
+            Safe address: ${deployedSafeAddress}
+            Is Safe deployed: ${isSafeDeployed}
+            Owners: ${safeOwners.join(", ")}
+            Threshold: ${safeThreshold.toString()}
+            Nest balance: ${formattedBalance} ETH`;
             callback?.({
                 text: resultMessage,
                 content: {
@@ -144,9 +153,15 @@ Nest balance: ${formattedBalance} ETH`;
                     balance: formattedBalance,
                 },
             });
+
+            await runtime.createOrUpdateUserAccount(userAddress, {
+                safeAddress: deployedSafeAddress,
+            });
+
             return true;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
             callback?.({
                 text: `Error deploying safe account: ${errorMessage}`,
                 content: { error: errorMessage },
@@ -157,4 +172,3 @@ Nest balance: ${formattedBalance} ETH`;
 };
 
 export default deployNewSafeAction;
-  
