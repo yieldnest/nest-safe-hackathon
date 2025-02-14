@@ -86,13 +86,14 @@ export const apiClient = {
     },
     startConversation: async (
         agentId: string,
-        message: string
+        message: string,
+        userAddress: string
     ): Promise<string> => {
         const resp = await fetch(`${BASE_URL}/${agentId}/startConversation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ text: message }),
+            body: JSON.stringify({ text: message, userAddress: userAddress }),
         });
         if (!resp.ok) {
             throw new Error(`HTTP error: ${resp.status}`);
@@ -156,7 +157,11 @@ export const apiClient = {
         const data = await response.json();
         return data.jobId;
     },
-    executeAction: (action: string, options: Record<string, any>, agentId?: string) =>
+    executeAction: (
+        action: string,
+        options: Record<string, any>,
+        agentId?: string
+    ) =>
         fetcher({
             url: `/agents/${agentId}/action/${action}`,
             method: "POST",

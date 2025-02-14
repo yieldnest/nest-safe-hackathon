@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Paperclip, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AIWriter from "react-aiwriter";
+import { useAccount } from "wagmi";
 import { AudioRecorder } from "./audio-recorder";
 import CopyButton from "./copy-button";
 import { Avatar, AvatarImage } from "./ui/avatar";
@@ -44,8 +45,15 @@ export default function Page({ agentId }: { agentId: UUID }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
     const [firstResponseReceived, setFirstResponseReceived] = useState(false);
-
+    const { address, isConnected, isConnecting } = useAccount();
     const queryClient = useQueryClient();
+    const [userAddress, setUserAddress] = useState<string | undefined>("");
+
+    useEffect(() => {
+        if (isConnected && !isConnecting) {
+            setUserAddress(address);
+        }
+    }, [isConnected, address, isConnecting]);
 
     const getMessageVariant = (role: string) =>
         role !== "user" ? "received" : "sent";
@@ -75,7 +83,10 @@ export default function Page({ agentId }: { agentId: UUID }) {
     const startConversationMutation = useMutation({
         mutationKey: ["start_conversation", agentId],
         mutationFn: async (message: string) => {
-            return apiClient.startConversation(agentId, message);
+            if (!userAddress) {
+                throw new Error("User address not loaded yet");
+            }
+            return apiClient.startConversation(agentId, message, userAddress);
         },
         onSuccess: (jobId: string) => {
             apiClient.startSse(agentId, jobId, (content) => {
@@ -132,6 +143,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
             });
         },
         onError: (err: any) => {
+            console.error("Failed to start conversation:", err);
             queryClient.setQueryData(
                 ["messages", agentId],
                 (old: ContentWithUser[] = []) =>

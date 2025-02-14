@@ -1,15 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useCheckPendingTransaction } from "@/hooks/use-check-pending-transaction";
+import { useDefaultAgent } from "@/hooks/use-default-agent";
+import { useSafeDetails } from "@/hooks/use-safe-details";
+import { useSignAndExecute } from "@/hooks/use-sign-and-execute";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
-import { useDefaultAgent } from "@/hooks/use-default-agent";
-import { useAccount } from "wagmi";
-import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useSafeDetails } from "@/hooks/use-safe-details";
+import { useState } from "react";
 import { arbitrum } from "viem/chains";
-import { useSignAndExecute } from "@/hooks/use-sign-and-execute";
-import { useCheckPendingTransaction } from '@/hooks/use-check-pending-transaction';
+import { useAccount } from "wagmi";
 
 interface Strategy {
     name: string;
@@ -27,7 +27,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
     const { safeDetails } = useSafeDetails();
     const { agent } = useDefaultAgent();
     const { toast } = useToast();
-    const [loading, setLoading] = useState<{[key: string]: boolean}>({});
+    const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
     const { signAndExecute } = useSignAndExecute();
     const { checkPendingTransaction } = useCheckPendingTransaction();
 
@@ -57,29 +57,44 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             return;
         }
         try {
-            setLoading(prev => ({ ...prev, [strategy.name]: true }));
+            setLoading((prev) => ({ ...prev, [strategy.name]: true }));
 
             // Call the route swap action for the first strategy
-            const swapResponseData = await apiClient.executeAction("ROUTE_SWAP", {
-                fromAddress: safeDetails?.address,
-                receiver: safeDetails?.address,
-                tokenIn: strategy.tokenIn,
-                tokenOut: strategy.tokenOut,
-                amountIn: strategy.amountIn,
-                chainId: arbitrum.id
-            }, agent.id);
+            const swapResponseData = await apiClient.executeAction(
+                "ROUTE_SWAP",
+                {
+                    fromAddress: safeDetails?.address,
+                    receiver: safeDetails?.address,
+                    tokenIn: strategy.tokenIn,
+                    tokenOut: strategy.tokenOut,
+                    amountIn: strategy.amountIn,
+                    chainId: arbitrum.id,
+                },
+                agent.id
+            );
             const swapResponse = swapResponseData.content.content;
 
-            const pendingTxResponseData = await apiClient.executeAction("GET_PENDING_TRANSACTIONS", {
-                safeAddress: safeDetails?.address
-            }, agent.id);
+            const pendingTxResponseData = await apiClient.executeAction(
+                "GET_PENDING_TRANSACTIONS",
+                {
+                    safeAddress: safeDetails?.address,
+                },
+                agent.id
+            );
             let pendingTxResponse = pendingTxResponseData.content.content;
-            
-            const txToSign = await checkPendingTransaction(pendingTxResponse, swapResponse);
+
+            const txToSign = await checkPendingTransaction(
+                pendingTxResponse,
+                swapResponse
+            );
 
             if (txToSign) {
                 console.log("Requesting signature for transaction:", txToSign);
-                await signAndExecute(txToSign, safeDetails?.address as `0x${string}`, address);
+                await signAndExecute(
+                    txToSign,
+                    safeDetails?.address as `0x${string}`,
+                    address
+                );
             } else {
                 console.log("Preparing safe transaction with params:", {
                     safeAddress: safeDetails?.address,
@@ -87,18 +102,22 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                     value: swapResponse.data.tx.value,
                     data: swapResponse.data.tx.data,
                     gas: swapResponse.data.gas,
-                    chainId: arbitrum.id
+                    chainId: arbitrum.id,
                 });
 
-                const prepareResponseData = await apiClient.executeAction("PREPARE_SAFE_TRANSACTION", {
-                    safeAddress: safeDetails?.address,
-                    to: swapResponse.data.tx.to,
-                    value: swapResponse.data.tx.value,
-                    data: swapResponse.data.tx.data,
-                    gas: swapResponse.data.gas,
-                    operation: swapResponse.data.tx.operationType,
-                    chainId: arbitrum.id
-                }, agent.id);
+                const prepareResponseData = await apiClient.executeAction(
+                    "PREPARE_SAFE_TRANSACTION",
+                    {
+                        safeAddress: safeDetails?.address,
+                        to: swapResponse.data.tx.to,
+                        value: swapResponse.data.tx.value,
+                        data: swapResponse.data.tx.data,
+                        gas: swapResponse.data.gas,
+                        operation: swapResponse.data.tx.operationType,
+                        chainId: arbitrum.id,
+                    },
+                    agent.id
+                );
                 const prepareResponse = prepareResponseData.content.content;
 
                 console.log("Prepare response:", prepareResponse);
@@ -117,7 +136,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                 const txToSign = {
                     to: prepareResponse.transaction.to,
                     value: prepareResponse.transaction.value,
-                    data: prepareResponse.transaction.data || '0x',
+                    data: prepareResponse.transaction.data || "0x",
                     operation: prepareResponse.transaction.operation,
                     safeTxGas: prepareResponse.transaction.safeTxGas,
                     baseGas: prepareResponse.transaction.baseGas,
@@ -126,26 +145,32 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                     refundReceiver: prepareResponse.transaction.refundReceiver,
                     nonce: prepareResponse.transaction.nonce,
                     safeTxHash: prepareResponse.transaction.safeTxHash,
-                }
-                
+                };
+
                 const nestSignature = prepareResponse.signatures.nest;
                 console.log("Requesting signature for transaction:", txToSign);
-                await signAndExecute(txToSign, safeDetails?.address as `0x${string}`, nestSignature);
+                await signAndExecute(
+                    txToSign,
+                    safeDetails?.address as `0x${string}`,
+                    nestSignature
+                );
 
                 // await apiClient.executeAction("EXECUTE_SAFE_TRANSACTION", {
                 //     safeAddress: safeDetails?.address
                 // }, agent.id);
             }
-
         } catch (error) {
             console.error("Error:", error);
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to process transaction",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to process transaction",
                 variant: "destructive",
             });
         } finally {
-            setLoading(prev => ({ ...prev, [strategy.name]: false }));
+            setLoading((prev) => ({ ...prev, [strategy.name]: false }));
         }
     };
 
@@ -154,9 +179,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             <Card key={strategy.name}>
                 <CardContent className="flex flex-col gap-4 p-6">
                     <div className="space-y-2">
-                        <h3 className="text-lg font-medium">
-                            {strategy.name}
-                        </h3>
+                        <h3 className="text-lg font-medium">{strategy.name}</h3>
                     </div>
                     <Button
                         onClick={() => handlePrepareAndSign(strategy)}
@@ -175,4 +198,4 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             </Card>
         </div>
     );
-} 
+}
