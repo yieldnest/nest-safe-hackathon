@@ -464,6 +464,8 @@ export class DirectClient {
                 return;
             }
 
+            let content: Content | null = null;
+
             try {
                 // 1) Retrieve the runtime, memory, etc. from jobData
                 const { runtime, memory, userAddress } = jobData;
@@ -529,43 +531,53 @@ export class DirectClient {
                 );
                 await runtime.messageManager.createMemory(responseMessage);
 
-                // 4) Send the first SSE chunk
-                sendSSE({ type: "message", content: responseContent });
+                // 4) Set content
+                content = responseContent;
+                try {
+                    // 5) Process actions and handle follow-up
+                    state = await runtime.updateRecentMessageState(state);
 
-                // 5) Process actions and handle follow-up
-                state = await runtime.updateRecentMessageState(state);
-
-                let followUpMessage: Content | null = null;
-                await runtime.processActions(
-                    memory,
-                    [responseMessage],
-                    state,
-                    async (newMessages) => {
-                        followUpMessage = newMessages;
-                        return [memory];
-                    }
-                );
-
-                await runtime.evaluate(memory, state);
-
-                if (followUpMessage) {
-                    const followUpMemory: Memory = {
-                        id: stringToUuid(
-                            Date.now().toString() + "-followup-" + jobId
-                        ),
-                        agentId: runtime.agentId,
-                        userId: runtime.agentId,
-                        roomId: memory.roomId,
-                        content: followUpMessage,
-                        createdAt: Date.now(),
-                    };
-
-                    await runtime.messageManager.addEmbeddingToMemory(
-                        followUpMemory
+                    let followUpMessage: Content | null = null;
+                    await runtime.processActions(
+                        memory,
+                        [responseMessage],
+                        state,
+                        async (newMessages) => {
+                            followUpMessage = newMessages;
+                            return [memory];
+                        }
                     );
-                    await runtime.messageManager.createMemory(followUpMemory);
 
-                    sendSSE({ type: "message", content: followUpMessage });
+                    await runtime.evaluate(memory, state);
+                    // process it only here to not make the client wait for existing follow-up message
+                    sendSSE({ type: "message", content: content });
+                    content = null;
+
+                    if (followUpMessage) {
+                        const followUpMemory: Memory = {
+                            id: stringToUuid(
+                                Date.now().toString() + "-followup-" + jobId
+                            ),
+                            agentId: runtime.agentId,
+                            userId: runtime.agentId,
+                            roomId: memory.roomId,
+                            content: followUpMessage,
+                            createdAt: Date.now(),
+                        };
+
+                        await runtime.messageManager.addEmbeddingToMemory(
+                            followUpMemory
+                        );
+                        await runtime.messageManager.createMemory(followUpMemory);
+
+                        sendSSE({ type: "message", content: followUpMessage });
+                      }
+                } catch (err) {
+                    console.error("Error in SSE folow up:", err);
+                    // send first content to be sure it's sent
+                    if (content) {
+                        sendSSE({ type: "message", content: content });
+                    }
                 }
 
                 // 6) done
