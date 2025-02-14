@@ -17,7 +17,7 @@ import { extractTxInfoTemplate } from "../templates";
 import { type VerificationResult } from "../index";
 
 export const routeSwapAction: Action = {
-    name: "ROUTE_SWAP",
+    name: "PREPARE_TOKEN_SWAP",
     description:
         "Sets up a token swap through Enso's API to find the best execution path. Use this if a user wants to send a transaction, swap tokens, transfer tokens, or deposit into a strategy.",
     similes: ["swap tokens", "exchange tokens", "trade tokens"],
@@ -121,17 +121,17 @@ export const routeSwapAction: Action = {
             data.tx.gas = data.gas;
             console.log("enso response", data);
 
-            // const verificationResult = await verifyTxEvaluator.handler(
-            //     runtime,
-            //     message,
-            //     state,
-            //     {
-            //         ...options,
-            //         resultData: data,
-            //     }
-            // );
+            const verificationResult = await verifyTxEvaluator.handler(
+                runtime,
+                message,
+                state,
+                {
+                    ...options,
+                    resultData: data,
+                }
+            );
 
-            // console.log("verificationResult", verificationResult);
+            console.log("verificationResult", verificationResult);
 
             // if (!(verificationResult as VerificationResult).isValid) {
             //     elizaLogger.log("Transaction verification failed", {

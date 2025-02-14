@@ -6,6 +6,7 @@ import {
     IAgentRuntime,
     Memory,
     ModelClass,
+    parseJSONObjectFromText,
     type State,
 } from "@elizaos/core";
 import { type VerificationResult } from "../index";
@@ -49,7 +50,7 @@ async function handler(
     message: Memory,
     state: State | undefined,
     options: { [key: string]: unknown } = {}
-): Promise<VerificationResult> {
+): Promise<any> {
     state = (await runtime.composeState(message, {
         resultData: options.resultData,
     })) as State;
@@ -67,7 +68,7 @@ async function handler(
     });
 
     // Parse the verification result
-    const verificationResult = JSON.parse(response);
+    const verificationResult = parseJSONObjectFromText(response);
 
     elizaLogger.log("Verification Result:", verificationResult);
 
