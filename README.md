@@ -12,6 +12,7 @@ DeFi can be overwhelming, with constant changes and countless strategies. NEST A
 
 💡 **Want a sneak peek?** Check out the screenshots below to see NEST AI in action!  
 
+💡 **Want to learn more about the vision?** Check out the pitchdeck here: [Learn more](https://docs.google.com/presentation/d/1cz9GndQkAxjY8rW-clXFvOVd-RWb_ku8dYdns45-dAI/edit?usp=sharing)
 ---
 
 ## 🔗 Stay Updated
