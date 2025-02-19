@@ -3,7 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useCheckPendingTransaction } from "@/hooks/use-check-pending-transaction";
 import { useDefaultAgent } from "@/hooks/use-default-agent";
 import { useSafeDetails } from "@/hooks/use-safe-details";
-import { useSignAndExecute } from "@/hooks/use-sign-and-execute";
+import { useSignTx } from '@/hooks/use-sign-tx';
+import { useExecuteTx } from '@/hooks/use-execute-tx';
+// import { useSignAndExecute } from "@/hooks/use-sign-and-execute";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import { Loader2 } from "lucide-react";
@@ -26,8 +28,10 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
     const { agent } = useDefaultAgent();
     const { toast } = useToast();
     const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
-    const { signAndExecute } = useSignAndExecute();
+    // const { signAndExecute } = useSignAndExecute();
     const { checkPendingTransaction } = useCheckPendingTransaction();
+    const { signTx } = useSignTx();
+    const { executeTx } = useExecuteTx();
 
     const handlePrepareAndSign = async (strategy: Strategy) => {
         console.log("Strategy:", strategy);
@@ -47,6 +51,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             });
             return;
         }
+        console.log("Safe details:", safeDetails);
         if (!safeDetails?.address) {
             toast({
                 title: "Error",
@@ -89,35 +94,36 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             }
 
             const txToSign = {
-                to: prepareResponse.transaction.to,
-                value: prepareResponse.transaction.value,
+                to: prepareResponse.transaction.to as `0x${string}`,
+                value: BigInt(prepareResponse.transaction.value),
                 data: prepareResponse.transaction.data || "0x",
                 operation: prepareResponse.transaction.operation,
-                safeTxGas: prepareResponse.transaction.safeTxGas,
-                baseGas: prepareResponse.transaction.baseGas,
-                gasPrice: prepareResponse.transaction.gasPrice,
-                gasToken: prepareResponse.transaction.gasToken,
-                refundReceiver: prepareResponse.transaction.refundReceiver,
-                nonce: prepareResponse.transaction.nonce,
-                safeTxHash: prepareResponse.transaction.safeTxHash,
+                safeTxGas: BigInt(prepareResponse.transaction.safeTxGas),
+                baseGas: BigInt(prepareResponse.transaction.baseGas),
+                gasPrice: BigInt(prepareResponse.transaction.gasPrice),
+                gasToken: prepareResponse.transaction.gasToken as `0x${string}`,
+                refundReceiver: prepareResponse.transaction.refundReceiver as `0x${string}`,
+                nonce: BigInt(prepareResponse.transaction.nonce),
+                safeTxHash: prepareResponse.transaction.safeTxHash as `0x${string}`,
+                signature: prepareResponse.signatures.nest as `0x${string}`,
+                safeAddress: safeDetails.address as `0x${string}`,
             };
 
             const nestSignature = prepareResponse.signatures.nest;
-            console.log("Requesting signature for transaction:", txToSign);
-            await signAndExecute(
-                txToSign,
-                safeDetails?.address as `0x${string}`,
-                nestSignature
-            );
+            const signedTx = await signTx(txToSign, safeDetails.address as `0x${string}`, nestSignature as `0x${string}`);
+
+            if (signedTx) {
+                await executeTx({ txToSign: signedTx.txToSign, safeAddress: signedTx.safeAddress as `0x${string}`, combinedSignature: signedTx.combinedSignature as `0x${string}` });
+                setLoading((prev) => ({ ...prev, [strategy.from]: false }));
+            }
         } catch (error) {
             console.error("Error in preparing and signing transaction:", error);
+            setLoading((prev) => ({ ...prev, [strategy.from]: false }));
             toast({
                 title: "Error",
                 description: error instanceof Error ? error.message : "Failed to process transaction",
                 variant: "destructive",
             });
-        } finally {
-            setLoading((prev) => ({ ...prev, [strategy.from]: false }));
         }
     };
 
@@ -125,7 +131,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
         <div className="p-4 ml-6 bg-nest rounded-sm">
             <Button
                 onClick={() => handlePrepareAndSign(strategy)}
-                disabled={loading[strategy.from]}
+                disabled={loading[strategy.from] || !isConnected || !address || !safeDetails?.address}
                 className="bg-nest-gold"
             >
                 {loading[strategy.from] ? (

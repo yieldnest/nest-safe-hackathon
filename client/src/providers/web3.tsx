@@ -1,26 +1,16 @@
 import {
-    connectorsForWallets,
-    getDefaultWallets,
+    getDefaultConfig,
     RainbowKitProvider,
 } from "@rainbow-me/rainbowkit";
+import { WagmiProvider } from 'wagmi';
 import "@rainbow-me/rainbowkit/styles.css";
-import { arbitrum } from "viem/chains";
-import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
+import { arbitrum, sepolia } from 'wagmi/chains';
+import { http } from 'wagmi';
+import {
+    QueryClientProvider,
+    QueryClient,
+  } from "@tanstack/react-query";
 
-// Configure chains & providers
-const { chains, publicClient } = configureChains(
-    [arbitrum],
-    [
-        jsonRpcProvider({
-            rpc: () => ({
-                http: arbitrum.rpcUrls.default.http[0],
-            }),
-        }),
-    ]
-);
-
-// Set up wallet connectors
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
 if (!projectId) {
@@ -29,26 +19,32 @@ if (!projectId) {
     );
 }
 
-const { wallets } = getDefaultWallets({
-    appName: "Nest Safe",
+const config = getDefaultConfig({
+    appName: 'Nest AI',
     projectId,
-    chains,
+    chains: [arbitrum, sepolia],
+    transports: {
+        [arbitrum.id]: http(),
+        [sepolia.id]: http(),
+    },
 });
 
-const connectors = connectorsForWallets([...wallets]);
-
-// Create wagmi config
-const config = createConfig({
-    autoConnect: true,
-    connectors,
-    publicClient,
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: Number.POSITIVE_INFINITY,
+        },
+    },
 });
 
-// Web3 provider component
 export function Web3Provider({ children }: { children: React.ReactNode }) {
     return (
-        <WagmiConfig config={config}>
-            <RainbowKitProvider chains={chains}>{children}</RainbowKitProvider>
-        </WagmiConfig>
+        <WagmiProvider config={config}>
+            <QueryClientProvider client={queryClient}>
+                <RainbowKitProvider>
+                    {children}
+                </RainbowKitProvider>
+            </QueryClientProvider>
+        </WagmiProvider>
     );
 }

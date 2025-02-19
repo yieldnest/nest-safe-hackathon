@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 import { useSafeDetails } from '@/hooks/use-safe-details';
+import { parseEther } from 'viem';
 
 interface FundSafeProps {
     safeAddress?: string;
@@ -16,6 +17,7 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
     const { address } = useAccount();
     const { data: balanceData } = useBalance({ address });
     const { refetch: refetchSafeDetails } = useSafeDetails();
+    const { sendTransactionAsync } = useSendTransaction();
 
     const handleMaxClick = () => {
         if (balanceData) {
@@ -34,30 +36,25 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
             return;
         }
         setIsLoading(true);
-        sendTransaction();
-    };
-
-    const { sendTransaction } = useSendTransaction({
-        to: safeAddress,
-        value: amount ? BigInt(parseFloat(amount) * 1e18) : BigInt(0), // Convert ETH to wei
-        onSuccess: async () => {
+        sendTransactionAsync({
+            to: safeAddress as `0x${string}`,
+            value: parseEther(amount),
+        }).then(() => {
             setIsLoading(false);
             toast({
                 title: "Transaction Sent",
                 description: `Successfully sent ${amount} ETH to the Safe.`,
             });
-            // Wait for transaction confirmation and then refetch safe details
-            await refetchSafeDetails();
-        },
-        onError: (error) => {
+            refetchSafeDetails();
+        }).catch((error: Error) => {
             setIsLoading(false);
             toast({
                 title: "Transaction Failed",
                 description: error.message,
                 variant: "destructive",
             });
-        },
-    });
+        });
+    };
 
     return (
         <div className="bg-nest rounded-sm border border-nest-light flex flex-col gap-4 px-2 py-2 w-full">
@@ -88,4 +85,4 @@ export function FundSafe({ safeAddress }: FundSafeProps) {
             </Button>
         </div>
     );
-} 
+}

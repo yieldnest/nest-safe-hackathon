@@ -11,16 +11,11 @@ export default function ChatRoute() {
     const { agent, isLoading: isLoadingAgent } = useDefaultAgent();
     const { safeDetails } = useSafeDetails();
 
-    // if (isLoadingAgent) return <div>Loading...</div>;
-    // if (!agent) return <div>No agent found.</div>;
-
-    // if (!isConnected) {
-    //     return <CreateSafeCard />;
-    // }
-
-    // if (!safeDetails) {
-    //     return <CreateSafeCard />;
-    // }
+    // return (
+    //     <div className="flex flex-col gap-4 w-1/3 mt-3">
+    //         <StrategyCard strategy={DUMMY_STRATEGIES[0]} />
+    //     </div>
+    // );
 
     return <Chat agentId={agent?.id} />;
 }

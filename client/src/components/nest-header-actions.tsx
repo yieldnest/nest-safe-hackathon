@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 export function NestHeaderActions() {
     const { address, isConnected } = useAccount();
     const { safeDetails } = useSafeDetails();
-    const { data: safeBalanceData } = useBalance({ address: safeDetails?.address as `0x${string}`, enabled: !!safeDetails?.address });
+    const { data: safeBalanceData } = useBalance({ address: safeDetails?.address as `0x${string}` });
     const { agent } = useDefaultAgent();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
