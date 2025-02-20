@@ -47,7 +47,6 @@ export default defineConfig(({ mode }: ConfigEnv) => {
                     target: "https://deep-index.moralis.io/api/v2.2/wallets",
                     changeOrigin: true,
                     rewrite: (path) => {
-                        console.log(path);
                         return path.replace(/^\/api\/balance/, "")
                     },
                     headers: {
