@@ -110,7 +110,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             };
 
             const nestSignature = prepareResponse.signatures.nest;
-            const signedTx = await signTx(txToSign, safeDetails.address as `0x${string}`, nestSignature as `0x${string}`);
+            const signedTx = await signTx(txToSign, safeDetails.address as `0x${string}`, nestSignature);
 
             if (signedTx) {
                 await executeTx({ txToSign: signedTx.txToSign, safeAddress: signedTx.safeAddress as `0x${string}`, combinedSignature: signedTx.combinedSignature as `0x${string}` });

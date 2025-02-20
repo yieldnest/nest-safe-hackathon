@@ -5,7 +5,6 @@ import {
   type Memory,
   type State,
 } from '@elizaos/core';
-
 import Safe from '@safe-global/protocol-kit';
 import { OperationType, SafeTransactionData } from '@safe-global/safe-core-sdk-types';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -43,8 +42,8 @@ export const prepareTransactionAction: Action = {
         const to = options?.to as string;
         const value = options?.value as string;
         const data = options?.data as string || '0x';
-        const gas = (parseInt(options?.gas as string) * 1.2).toFixed(0);
-        const operation = options?.operation as number || OperationType.Call;
+        const gas = (parseInt(options?.gas as string) * 1.2).toFixed(0).toString();
+        const operation = options?.operation as number || OperationType.DelegateCall;
         const strategyName = options?.strategyName as string || 'Unknown Strategy';
         const strategyDescription = options?.strategyDescription as string || '';
 
@@ -205,7 +204,7 @@ Next steps:
                     safeTxHash
                 },
                 signatures: {
-                    nest: nestSignature.data,
+                    nest: nestSignature,
                 }
             }
         });

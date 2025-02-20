@@ -1,6 +1,13 @@
-import { useSignTypedData } from "wagmi";
+import { useSignTypedData, useAccount } from "wagmi";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from 'react';
+import { getAddress } from "viem";
+import { arbitrum } from 'viem/chains';
+
+interface EthSafeSignature {
+  signer: string;
+  data: string;
+  isContractSignature: boolean;
+}
 
 interface TxToSign {
   to: `0x${string}`;
@@ -19,14 +26,15 @@ interface TxToSign {
 }
 
 export function useSignTx() {
+  const { address: userAddress } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
   const { toast } = useToast();
 
-  const signTx = async (txToSign: TxToSign, safeAddress: string, nestSignature: string) => {
+  const signTx = async (txToSign: TxToSign, safeAddress: string, nestSignature: EthSafeSignature) => {
     try {
       const signature = await signTypedDataAsync({
         domain: {
-          chainId: 42161,
+          chainId: arbitrum.id,
           verifyingContract: safeAddress as `0x${string}`,
         },
         types: {
@@ -51,8 +59,20 @@ export function useSignTx() {
         description: "Transaction has been signed.",
       });
 
-      // Combine signatures
-      const combinedSignature = '0x' + [signature, nestSignature].map((s) => s.slice(2)).join('');
+      if (!userAddress) {
+        throw new Error('Missing user address');
+      }
+
+      const signatures = [
+        { signer: userAddress, signature },
+        { signer: nestSignature.signer, signature: nestSignature.data }
+      ].sort((a, b) => 
+        a.signer < b.signer ? -1 : 1
+      );
+
+      const combinedSignature = '0x' + signatures
+        .map(sig => sig.signature.slice(2))
+        .join('');
 
       return { txToSign, safeAddress, combinedSignature };
 
